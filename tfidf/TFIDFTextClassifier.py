@@ -28,7 +28,7 @@ import math
 from sys import getsizeof
 import numpy as np
 from numpy import linalg as LA
-from classifiers.TextClassifier import TextClassifier
+from nsNLP.classifiers.TextClassifier import TextClassifier
 
 
 # TF-IDF text classifier

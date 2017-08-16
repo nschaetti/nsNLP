@@ -28,7 +28,7 @@ import Oger
 import mdp
 from datetime import datetime
 from sys import getsizeof
-from classifiers.TextClassifier import TextClassifier
+from nsNLP.classifiers.TextClassifier import TextClassifier
 import matplotlib.pyplot as plt
 from decimal import *
 import logging

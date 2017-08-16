@@ -23,7 +23,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
-from classifiers.TextClassifier import TextClassifier
+from nsNLP.classifiers.TextClassifier import TextClassifier
 
 
 # Convolution Neural Network model

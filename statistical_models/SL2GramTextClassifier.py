@@ -26,7 +26,7 @@
 import spacy
 from sys import getsizeof
 import decimal
-from classifiers.TextClassifier import TextClassifier
+from nsNLP.classifiers.TextClassifier import TextClassifier
 
 
 # 2-Gram Statistical language text classifier
