@@ -38,16 +38,16 @@ class Metrics(object):
     def success_rate(model, sample_set):
         """
         Success rate
+        :param model:
         :param sample_set:
         :return:
         """
         successes = 0.0
         count = 0.0
-        print(len(sample_set))
+
         # For each sample
         index = 1
         for sample in sample_set:
-            print(index)
             # Prediction
             prediction, _ = model(sample)
 
@@ -56,6 +56,7 @@ class Metrics(object):
                 successes += 1.0
             # end if
             index += 1
+            count += 1.0
         # end for
 
         return successes / count
