@@ -52,6 +52,15 @@ class TextClassifier(object):
     # Public
     ##############################################
 
+    # Get name
+    def name(self):
+        """
+        Get name
+        :return:
+        """
+        pass
+    # end name
+
     # Train the model
     def train(self, x, y, verbose=False):
         """
@@ -129,7 +138,7 @@ class TextClassifier(object):
         # end if
 
         # Classify the document
-        return self._classify(x)
+        return self._classify(x.x())
     # end __class__
 
     # To str
