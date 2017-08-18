@@ -43,9 +43,11 @@ class Metrics(object):
         """
         successes = 0.0
         count = 0.0
-
+        print(len(sample_set))
         # For each sample
+        index = 1
         for sample in sample_set:
+            print(index)
             # Prediction
             prediction, _ = model(sample)
 
@@ -53,6 +55,7 @@ class Metrics(object):
             if prediction == sample.y():
                 successes += 1.0
             # end if
+            index += 1
         # end for
 
         return successes / count
