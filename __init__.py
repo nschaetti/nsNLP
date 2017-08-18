@@ -8,6 +8,7 @@
 
 # Imports
 import classifiers
+import data
 import deep_models
 import esn_models
 import lsa_models
@@ -15,6 +16,7 @@ import lstm_models
 import rnn_models
 import statistical_models
 import tfidf
+import tools
 import validation
 
-__all__ = ['classifiers', 'deep_models', 'esn_models', 'lsa_models', 'lstm_models', 'rnn_models', 'statistical_models', 'tfidf', 'validation']
+__all__ = ['classifiers', 'data', 'deep_models', 'esn_models', 'lsa_models', 'lstm_models', 'rnn_models', 'statistical_models', 'tfidf', 'tools', 'validation']
