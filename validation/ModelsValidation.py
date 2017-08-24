@@ -10,6 +10,7 @@
 # Imports
 import random
 import copy
+import sys
 import numpy as np
 from scipy import stats
 import nsNLP.tools as tools
@@ -93,6 +94,9 @@ class ModelsValidation(object):
         # Results
         results = np.zeros(self._k)
 
+        # Log
+        sys.stdout.write(u"Evaluating model {}\n".format(model.name()))
+
         # For each fold
         k = 0
         for training_set, test_set in self._cross_validation:
@@ -103,10 +107,14 @@ class ModelsValidation(object):
 
             # Success rate on test set
             results[k] = tools.Metrics.success_rate(model, test_set)
+            sys.stdout.write(u"Test success rate for {}, fold {} : {}\n".format(model.name(), k, results[k]))
 
             # Next fold
             k += 1
         # end for
+
+        # Average
+        sys.stdout.write(u"Average test success rate for {} : {}\n".format(model.name(), np.average(results)))
 
         return results
     # end _evaluate
