@@ -60,6 +60,15 @@ class SL2GramTextClassifier(TextClassifier):
     # Public
     ##############################################
 
+    # Get name
+    def name(self):
+        """
+        Get name
+        :return:
+        """
+        return u"2-gram statistical language with {} smoothing".format(self._smoothing)
+    # end name
+
     # Get token count
     def get_token_count(self):
         """
