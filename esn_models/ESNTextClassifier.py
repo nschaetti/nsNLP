@@ -101,6 +101,16 @@ class ESNTextClassifier(TextClassifier):
     # Public
     ##############################################
 
+    # Get name
+    def name(self):
+        """
+        Get name
+        :return:
+        """
+        return u"ESN Text Classifier (size: {}, leaky-rate: {}, spectral-radius: {}, input-sparsity: {}, w-sparsity: {}".format(
+            self._output_dim, self._leak_rate, self._spectral_radius, self._input_sparsity, self._w_sparsity)
+    # end name
+
     # Train
     def train(self, x, y, verbose=False):
         """
