@@ -59,6 +59,15 @@ class CNNModel(TextClassifier):
     # Public
     ##############################################
 
+    # Get name
+    def name(self):
+        """
+        Get name
+        :return:
+        """
+        return u"CNN Tex classifier"
+    # end name
+
     # Save the model
     def save(self, path):
         """
