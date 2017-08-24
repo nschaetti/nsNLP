@@ -68,6 +68,15 @@ class TFIDFTextClassifier(TextClassifier):
     # Public
     ##############################################
 
+    # Get name
+    def name(self):
+        """
+        Get name
+        :return:
+        """
+        return u"TFIDF"
+    # end name
+
     # Train the model
     def train(self, x, y, verbose=False):
         """

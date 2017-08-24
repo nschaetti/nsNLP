@@ -68,6 +68,15 @@ class TFIDF2GramTextClassifier(TextClassifier):
     # Public
     ##############################################
 
+    # Get name
+    def name(self):
+        """
+        Get name
+        :return:
+        """
+        return u"2gram TFIDF"
+    # end name
+
     # Train the model
     def train(self, x, y, verbose=False):
         """
