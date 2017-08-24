@@ -19,7 +19,7 @@ class TwoClassesCrossValidation(object):
     """
 
     # Constructor
-    def __init__(self, positive_dataset, negative_dataset, k=10, shuffle=True):
+    def __init__(self, positive_dataset=list(), negative_dataset=list(), k=10, shuffle=True):
         """
         Constructo
         :param dataset:
@@ -30,19 +30,16 @@ class TwoClassesCrossValidation(object):
         self._negatives = negative_dataset
 
         # Sizes
-        self._n_positive_samples = len(positive_dataset)
-        self._n_negative_samples = len(negative_dataset)
         self._k = k
-
-        # Folds
-        self._positive_folds = list()
-        self._negative_folds = list()
+        self._n_positive_samples = len(self._positives)
+        self._n_negative_samples = len(self._negatives)
 
         # Fold's sizes
-        self._positive_fold_size = int(self._n_positive_samples / k)
-        self._negative_fold_size = int(self._n_negative_samples / k)
+        self._positive_fold_size = int(self._n_positive_samples / self._k)
+        self._negative_fold_size = int(self._n_negative_samples / self._k)
 
         # Shuffle
+        self._shuffle = shuffle
         if shuffle:
             random.shuffle(self._positives)
             random.shuffle(self._negatives)
@@ -51,6 +48,30 @@ class TwoClassesCrossValidation(object):
         # Position
         self._fold_pos = 0
     # end __init__
+
+    #######################################
+    # Override
+    #######################################
+
+    # Add positive sample
+    def add_positive(self, sample):
+        """
+        Add positive sample
+        :param sample:
+        :return:
+        """
+        self._positives.append(sample)
+    # end add_positive
+
+    # Add negative sample
+    def add_negative(self, sample):
+        """
+        Add negative sample
+        :param sample:
+        :return:
+        """
+        self._negatives.append(sample)
+    # end add_negative
 
     #######################################
     # Override
@@ -71,6 +92,22 @@ class TwoClassesCrossValidation(object):
         Next element
         :return:
         """
+        if self._fold_pos == 0:
+            # Sizes
+            self._n_positive_samples = len(self._positives)
+            self._n_negative_samples = len(self._negatives)
+
+            # Fold's sizes
+            self._positive_fold_size = int(self._n_positive_samples / self._k)
+            self._negative_fold_size = int(self._n_negative_samples / self._k)
+
+            # Shuffle
+            if self._shuffle:
+                random.shuffle(self._positives)
+                random.shuffle(self._negatives)
+            # end if
+        # end if
+
         if self._fold_pos < self._k:
             # Total
             positive_train_set = copy.copy(self._positives)
