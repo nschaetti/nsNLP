@@ -111,6 +111,9 @@ class ModelsValidation(object):
 
             # Next fold
             k += 1
+
+            # Reset model
+            model.reset()
         # end for
 
         # Average
