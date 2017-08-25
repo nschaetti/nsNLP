@@ -66,7 +66,7 @@ class SLTextClassifier(TextClassifier):
         Get name
         :return:
         """
-        return u"Statistical language with {} smoothing".format(self._smoothing)
+        return u"Statistical language with {} smoothing = {}".format(self._smoothing, self._smoothing_param)
     # end name
 
     # Get token count
@@ -156,8 +156,8 @@ class SLTextClassifier(TextClassifier):
         To string
         :return:
         """
-        return "StatisticalModel(n_classes={}, n_tokens={}, mem_size={}o, " \
-               "token_counters_mem_size={} Go, class_counters_mem_size={} Go, n_total_token={})" \
+        return u"StatisticalModel(n_classes={}, n_tokens={}, mem_size={}o, " \
+               u"token_counters_mem_size={} Go, class_counters_mem_size={} Go, n_total_token={})" \
             .format(self._n_classes, self.get_token_count(),
                     getsizeof(self), round(getsizeof(self._token_counters) / 1073741824.0, 4),
                     round(getsizeof(self._class_counters) / 1073741824.0, 4), self._n_total_token)
