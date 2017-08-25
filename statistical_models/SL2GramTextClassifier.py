@@ -132,7 +132,7 @@ class SL2GramTextClassifier(TextClassifier):
     # end train
 
     ##############################################
-    # Private
+    # Override
     ##############################################
 
     # Get token probability
@@ -172,6 +172,20 @@ class SL2GramTextClassifier(TextClassifier):
     ##############################################
     # Private
     ##############################################
+
+    # Reset the classifier
+    def _reset_model(self):
+        """
+        Reset the classifier
+        """
+        # Properties
+        self._n_token = 0
+        self._n_total_token = 0
+
+        # Init dictionaries
+        self._token_counters = dict()
+        self._class_counters = dict()
+    # end reset
 
     # Classify a document
     def _classify(self, x):
