@@ -30,11 +30,31 @@ class CrossValidation(object):
         self._k = k
         self._folds = list()
         self._fold_size = int(self._n_samples / k)
+        self._shuffle = shuffle
         if shuffle:
             random.shuffle(self._dataset)
         # end if
         self._fold_pos = 0
     # end __init__
+
+    #######################################
+    # Public
+    #######################################
+
+    # Add a sample
+    def add(self, sample):
+        """
+        Add a sample
+        :param sample:
+        :return:
+        """
+        self._dataset.append(sample)
+        self._n_samples += 1
+        self._fold_size = int(self._n_samples / k)
+        if self._shuffle:
+            random.shuffle(self._dataset)
+        # end if
+    # end add
 
     #######################################
     # Override
