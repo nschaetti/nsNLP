@@ -50,7 +50,7 @@ class Metrics(object):
         for sample in sample_set:
             # Prediction
             prediction, _ = model(sample)
-            print(u"target: {}, predicted: {}".format(sample.y(), prediction))
+
             # Right?
             if prediction == sample.y():
                 successes += 1.0
