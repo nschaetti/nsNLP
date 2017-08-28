@@ -33,7 +33,7 @@ class LettersMatrix(object):
     """
 
     # Constructor
-    def __init__(self, text, features_mapping, letters="", punctuations="", upper_case=False):
+    def __init__(self, text, features_mapping=["grams"], letters="", punctuations="", upper_case=False):
         """
 
         :param text:
