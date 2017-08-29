@@ -24,6 +24,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt
 import torch
+import sys
 
 
 # A matrix with 2-gram of letters frequencies
@@ -33,25 +34,20 @@ class LettersMatrix(object):
     """
 
     # Constructor
-    def __init__(self, text, features_mapping=['grams'], letters="", punctuations="", upper_case=False):
+    def __init__(self, features_mapping, letters="", punctuations=""):
         """
-
-        :param text:
+        Constructor
         :param letters:
         :param punctuations:
         :param upper_case:
         """
         # Properties
-        self._text = text
         self._features_mapping = features_mapping
         self._letters = letters
-        self._punctuations = punctuations
-        self._upper_case = upper_case
-        self._end_letters_col = len(letters) if not upper_case else len(letters) * 2
-        self._first_letters_col = self._end_letters_col + 1
-        self._punctuations_col = self._first_letters_col + 1
-        self._end_grams_col = self._punctuations_col + 1
-        self._first_grams_col = self._end_grams_col + (len(letters) if not upper_case else len(letters) * 2)
+        self._grams_col = 0
+        self._end_grams_col = len(letters)
+        self._punctuations_col = self._end_grams_col + 1
+        self._first_grams_col = self._punctuations_col + len(letters)
 
         # Matrix dimension
         self._n_row, self._n_col = self._compute_matrix_dimension(self._features_mapping)
@@ -108,48 +104,22 @@ class LettersMatrix(object):
         :return:
         """
         # Row dimension
-        n_row = len(self._letters)
-        if self._upper_case:
-            n_row *= 2
-        # end
-        n_row += 2
+        n_row = len(self._letters) + 1
 
         # Grams
         n_col = 0
         if 'grams' in features_mapping:
-            if self._upper_case:
-                n_col += len(self._letters) * 2
-            else:
-                n_col += len(self._letters)
-            # end if
+            n_col += len(self._letters)
         # end if
 
         # End grams
         if 'end_grams' in features_mapping:
-            if self._upper_case:
-                n_col += len(self._letters) * 2
-            else:
-                n_col += len(self._letters)
-            # end if
-        # end if
-
-        # End letters
-        if 'end_letters' in features_mapping:
-            n_col += 1
+            n_col += len(self._letters)
         # end if
 
         # First grams
         if 'first_grams' in features_mapping:
-            if self._upper_case:
-                n_col += len(self._letters) * 2
-            else:
-                n_col += len(self._letters)
-            # end if
-        # end if
-
-        # First letters
-        if 'first_letters' in features_mapping:
-            n_col += 1
+            n_col += len(self._letters)
         # end if
 
         # Punctuations
@@ -168,16 +138,12 @@ class LettersMatrix(object):
         :return:
         """
         try:
-            pos = self._letters.index(letter.lower())
+            pos = self._letters.index(letter)
+            return pos
         except ValueError:
-            print(unicode(letter))
-            print(unicode(letter.lower()))
+            sys.stderr.write(u"Can not find index for {}, exiting\n".format(letter))
             exit()
         # end try
-        if self._upper_case and letter.isupper():
-            pos += len(self._letters)
-        # end if
-        return pos
     # end
 
     # Dictionary sum
@@ -207,29 +173,18 @@ class LettersMatrix(object):
         n_row, n_col = self._compute_matrix_dimension(features_mapping)
         features_matrix = np.zeros((n_row, n_col))
 
-        # Normalize
-        divisor = self._dict_sum(features_mapping[mapping_index])
-
         # For each gram
-        maxi = 0
         for gram in features_mapping[mapping_index].keys():
-            count = features_mapping[mapping_index][gram]
-            if count / divisor > maxi:
-                maxi = count / divisor
-            # end if
+            freq = features_mapping[mapping_index][gram]
             if len(gram) == 1:
-                if gram.isupper():
-                    features_matrix[1, self._letter_to_position(gram.lower())] = count / divisor
-                else:
-                    features_matrix[0, self._letter_to_position(gram.lower())] = count / divisor
-                # end if
+                features_matrix[0, self._letter_to_position(gram)] = freq
             else:
                 a = self._letter_to_position(gram[0])
                 b = self._letter_to_position(gram[1])
-                features_matrix[a+2, b+col] = count / divisor
+                features_matrix[a+1, b+col] = freq
             # end if
         # end for
-        features_matrix /= maxi
+
         return features_matrix
     # end _generate_grams_data
 
@@ -246,20 +201,14 @@ class LettersMatrix(object):
         n_row, n_col = self._compute_matrix_dimension(features_mapping)
         features_matrix = np.zeros((n_row, n_col))
 
-        # Normalize
-        divisor = self._dict_sum(features_mapping[mapping_index])
-
         # For each letters
         maxi = 0
         for letter in features_mapping[mapping_index].keys():
-            count = features_mapping[mapping_index][letter]
-            if count / divisor > maxi:
-                maxi = count / divisor
-            # end if
+            freq = features_mapping[mapping_index][letter]
             a = self._letter_to_position(letter[0])
-            features_matrix[a + 2, col_pos] = count / divisor
+            features_matrix[a + 2, col_pos] = freq
         # end for
-        features_matrix /= maxi
+
         return features_matrix
     # end _generate_end_letters_data
 
@@ -276,23 +225,13 @@ class LettersMatrix(object):
         n_row, n_col = self._compute_matrix_dimension(features_mapping)
         features_matrix = np.zeros((n_row, n_col))
 
-        # Normalize
-        divisor = self._dict_sum(features_mapping[mapping_index])
-
         # For each punctuations
-        maxi = 0
         for p in features_mapping[mapping_index].keys():
-            count = features_mapping[mapping_index][p]
-            if count / divisor > maxi:
-                maxi = count / divisor
-            # end if
+            freq = features_mapping[mapping_index][p]
             a = self._punctuations.index(p)
-            features_matrix[a + 2, col_pos] = count / divisor
+            features_matrix[a + 2, col_pos] = freq
         # end for
-        if maxi != 0:
-            features_matrix /= maxi
-        # end if
-        # end try
+
         return features_matrix
     # end _generate_punctuations_data
 
@@ -308,19 +247,9 @@ class LettersMatrix(object):
             self._features_matrix += self._generate_grams_data(self._features_mapping, 'grams')
         # end if
 
-        # Generate end letters data
-        if 'end_letters' in self._features_mapping:
-            self._features_matrix += self._generate_letters_data(self._features_mapping, 'end_letters', self._end_letters_col)
-        # end if
-
         # Generate end grams data
         if 'end_grams' in self._features_mapping:
             self._features_matrix += self._generate_grams_data(self._features_mapping, 'end_grams', self._end_grams_col)
-        # end if
-
-        # Generate first letters data
-        if 'first_letters' in self._features_mapping:
-            self._features_matrix += self._generate_letters_data(self._features_mapping, 'first_letters', self._first_letters_col)
         # end if
 
         # Generate punctuation data
