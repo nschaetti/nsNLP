@@ -51,6 +51,7 @@ class LetterStatistics(object):
     def get_punctuation(self, to_one=False):
         """
         Get punctuation
+        :param to_one: To 0-1
         :return:
         """
         # Cleaned text
@@ -85,6 +86,7 @@ class LetterStatistics(object):
         """
         Get beginning letters
         :param uppercase:
+        :param to_one: To 0-1
         :return:
         """
         return self._get_positional_letters(0, uppercase=uppercase, to_one=to_one)
@@ -95,6 +97,7 @@ class LetterStatistics(object):
         """
         Get beginning letters
         :param uppercase:
+        :param to_one: To 0-1
         :return:
         """
         return self._get_positional_letters(-1, uppercase=uppercase, to_one=to_one)
@@ -105,6 +108,7 @@ class LetterStatistics(object):
         """
         Get beggining 2grams
         :param uppercase:
+        :param to_one: To 0-1
         :return:
         """
         return self._get_positional_2grams(0, uppercase=uppercase, to_one=to_one)
@@ -115,6 +119,7 @@ class LetterStatistics(object):
         """
         Get beggining 2grams
         :param uppercase:
+        :param to_one: To 0-1
         :return:
         """
         return self._get_positional_2grams(-2, uppercase=uppercase, to_one=to_one)
@@ -124,6 +129,8 @@ class LetterStatistics(object):
     def get_3grams(self, uppercase=True, to_one=False):
         """
         Get 3-grams
+        :param uppercase:
+        :param to_one: To 0-1
         :return:
         """
         # Cleaned text
@@ -171,6 +178,8 @@ class LetterStatistics(object):
     def get_2grams(self, uppercase=True, to_one=False):
         """
         Get 2-grams
+        :param uppercase:
+        :param to_one: To 0-1
         :return:
         """
         # Cleaned text
@@ -198,7 +207,7 @@ class LetterStatistics(object):
                     result[gram] += 1.0
                     total += 1.0
                     # end for
-            elif len(token) == 1:
+            elif len(token) == 1 and token not in self._punc:
                 gram = token
                 if gram not in result.keys():
                     result[gram] = 0.0
@@ -218,6 +227,8 @@ class LetterStatistics(object):
     def get_letter_frequencies(self, uppercase=True, to_one=False):
         """
         Get letters
+        :param uppercase:
+        :param to_one: To 0-1
         :return:
         """
         # Cleaned text
@@ -238,12 +249,14 @@ class LetterStatistics(object):
         for token in cleaned_text.split(u' '):
             # For each letter
             for i in range(len(token)):
-                letter = token[i]
-                if letter not in result.keys():
-                    result[letter] = 0.0
+                if token not in self._punc:
+                    letter = token[i]
+                    if letter not in result.keys():
+                        result[letter] = 0.0
+                    # end if
+                    result[letter] += 1.0
+                    total += 1.0
                 # end if
-                result[letter] += 1.0
-                total += 1.0
             # end for
         # end for
 
@@ -258,7 +271,7 @@ class LetterStatistics(object):
     #########################################
 
     # Get position 2grams
-    def _get_positional_2grams(self, pos=0, uppercase=True, to_one=False):
+    def _get_positional_2grams(self, pos, uppercase=True, to_one=False):
         """
         Get beginning letters
         :param uppercase:
@@ -281,7 +294,11 @@ class LetterStatistics(object):
         # For each tokens
         for token in cleaned_text.split(u' '):
             if len(token) > 1:
-                gram = token[pos:pos+2]
+                if pos+2 == 0:
+                    gram = token[pos:]
+                else:
+                    gram = token[pos:pos+2]
+                # end if
                 if gram not in self._punc:
                     if gram not in result.keys():
                         result[gram] = 0.0
@@ -321,15 +338,15 @@ class LetterStatistics(object):
 
         # For each tokens
         for token in cleaned_text.split(u' '):
-            if len(token) > 0:
+            if len(token) > 0 and token not in self._punc:
                 if token[pos] not in self._punc:
                     if token[pos] not in result.keys():
                         result[token[pos]] = 0.0
                     # end if
                     result[token[pos]] += 1.0
                     total += 1.0
-                    # end if
-                    # end if
+                # end if
+            # end if
         # end for
 
         # Normalize
