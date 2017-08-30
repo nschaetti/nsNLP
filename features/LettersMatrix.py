@@ -44,10 +44,11 @@ class LettersMatrix(object):
         # Properties
         self._features_mapping = features_mapping
         self._letters = letters
+        self._punctuations = punctuations
         self._grams_col = 0
-        self._end_grams_col = len(letters)
-        self._punctuations_col = self._end_grams_col + 1
-        self._first_grams_col = self._punctuations_col + len(letters)
+        self._end_grams_col = len(letters) if 'end_grams' in features_mapping else 0
+        self._first_grams_col = (self._end_grams_col + len(letters)) if 'first_grams' in features_mapping else 0
+        self._punctuations_col = (self._first_grams_col + len(letters)) if 'punctuations' in features_mapping else 0
 
         # Matrix dimension
         self._n_row, self._n_col = self._compute_matrix_dimension(self._features_mapping)
@@ -73,7 +74,7 @@ class LettersMatrix(object):
         if matrix_format == 'csr':
             return self._features_matrix
         elif matrix_format == 'numpy':
-            return self._features_matrix.todense()
+            return self._features_matrix.toarray()
         elif matrix_format == 'tensor':
             if to_array:
                 m = self._features_matrix.toarray()
@@ -171,7 +172,7 @@ class LettersMatrix(object):
         """
         # Matrix dimension
         n_row, n_col = self._compute_matrix_dimension(features_mapping)
-        features_matrix = np.zeros((n_row, n_col))
+        features_matrix = csr_matrix((n_row, n_col))
 
         # For each gram
         for gram in features_mapping[mapping_index].keys():
@@ -199,10 +200,9 @@ class LettersMatrix(object):
         """
         # Matrix dimension
         n_row, n_col = self._compute_matrix_dimension(features_mapping)
-        features_matrix = np.zeros((n_row, n_col))
+        features_matrix = csr_matrix((n_row, n_col))
 
         # For each letters
-        maxi = 0
         for letter in features_mapping[mapping_index].keys():
             freq = features_mapping[mapping_index][letter]
             a = self._letter_to_position(letter[0])
@@ -223,7 +223,7 @@ class LettersMatrix(object):
         """
         # Matrix dimension
         n_row, n_col = self._compute_matrix_dimension(features_mapping)
-        features_matrix = np.zeros((n_row, n_col))
+        features_matrix = csr_matrix((n_row, n_col))
 
         # For each punctuations
         for p in features_mapping[mapping_index].keys():
