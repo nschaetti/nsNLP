@@ -44,8 +44,13 @@ class NaiveBayesClassifier(TextClassifier):
         super(NaiveBayesClassifier, self).__init__(classes=classes)
 
         # Properties
+        self._classes = classes
+        self._n_classes = classes
         self._smoothing = smoothing
         self._smoothing_param = smoothing_param
+
+        # Initialize
+        self._init()
     # end __init__
 
     ##############################################
@@ -62,14 +67,37 @@ class NaiveBayesClassifier(TextClassifier):
     # end name
 
     # Train the model
-    def train(self, x, y, verbose=False):
+    def train(self, x, c, verbose=False):
         """
         Train
         :param x: Example's inputs
-        :param y: Example's outputs
+        :param c: Example's outputs
         :param verbose: Verbosity
         """
-        pass
+        # Tokens
+        tokens = spacy.load(self._lang)(x)
+
+        # For each token
+        for token in tokens:
+            # Filtering
+            filtered, token_text = self._filter_token(token)
+            token_text = token_text.lower()
+
+            if filtered:
+                # Add to conditional prob.
+                try:
+                    self._p_fi_c[c][token_text] += 1.0
+                except KeyError:
+                    self._p_fi_c[c][token_text] = 1.0
+                # end try
+
+                # Add class prob
+                self._p_c[c] += 1.0
+
+                # Add total token count
+                self._n_tokens += 1.0
+            # end if
+        # end for
     # end train
 
     # Get token count
@@ -128,11 +156,33 @@ class NaiveBayesClassifier(TextClassifier):
         """
         Reset the classifier
         """
-        pass
+        self._init()
     # end reset
 
+    # Init classifier
+    def _init(self):
+        """
+        Init classifier
+        :return:
+        """
+        # Conditional probabilities
+        self._p_fi_c = dict()
+        for c in self._classes:
+            self._p_fi_c[c] = dict()
+        # end for
+
+        # Class probabilities
+        self._p_c = dict()
+        for c in self._classes:
+            self._p_c[c] = 0.0
+        # end for
+
+        # Total count
+        self._n_tokens = 0
+    # end _init
+
     ##############################################
-    # Private
+    # Static
     ##############################################
 
     # Dirichlet prior smoothing function
