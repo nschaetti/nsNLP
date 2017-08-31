@@ -49,6 +49,27 @@ class TextSampling(object):
         self._clean_text()
     # end add_text
 
+    # Add texts
+    def add_texts(self, texts):
+        """
+        Add texts
+        :param texts:
+        :return:
+        """
+        for text in texts:
+            self.add_text(text)
+        # end for
+    # end add_texts
+
+    # Get number of lines
+    def n_lines(self):
+        """
+        Get number of lines
+        :return:
+        """
+        return self._n_lines
+    # end n_lines
+
     ##############################################
     # Override
     ##############################################
