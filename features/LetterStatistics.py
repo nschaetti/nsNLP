@@ -267,6 +267,25 @@ class LetterStatistics(object):
     # end get_letters
 
     #########################################
+    # Override
+    #########################################
+
+    # Call
+    def __call__(self, uppercase=False, to_one=False):
+        """
+        Call
+        :return:
+        """
+        # Get statistics
+        grams_stats = dict()
+        grams_stats['grams'] = self.get_2grams(uppercase=uppercase, to_one=to_one)
+        grams_stats['first_grams'] = self.get_beginning_2grams(uppercase=uppercase, to_one=to_one)
+        grams_stats['end_grams'] = self.get_ending_2grams(uppercase=uppercase, to_one=to_one)
+        grams_stats['punctuations'] = self.get_punctuation(to_one=to_one)
+        return grams_stats
+    # end __call__
+
+    #########################################
     # Private
     #########################################
 
