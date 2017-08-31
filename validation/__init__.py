@@ -11,3 +11,4 @@
 from .CrossValidation import CrossValidation
 from .ModelsValidation import ModelsValidation
 from .TwoClassesCrossValidation import TwoClassesCrossValidation
+from .TextSampling import TextSampling
