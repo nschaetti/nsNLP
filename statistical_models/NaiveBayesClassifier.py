@@ -44,7 +44,7 @@ class NaiveBayesClassifier(TextClassifier):
         super(NaiveBayesClassifier, self).__init__(classes=classes)
 
         # Properties
-        self._smoothing = smoothing_param
+        self._smoothing = smoothing
         self._smoothing_param = smoothing_param
     # end __init__
 
