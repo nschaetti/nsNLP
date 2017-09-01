@@ -25,3 +25,4 @@
 # Import packages
 from SL2GramTextClassifier import SL2GramTextClassifier
 from SLTextClassifier import SLTextClassifier
+from NaiveBayesClassifier import NaiveBayesClassifier

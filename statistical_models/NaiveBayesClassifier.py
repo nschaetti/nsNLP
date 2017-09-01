@@ -31,6 +31,9 @@ from nsNLP.classifiers.TextClassifier import TextClassifier
 
 # Naive Bayes classifier
 class NaiveBayesClassifier(TextClassifier):
+    """
+    Naive Bayes Classifer
+    """
 
     # Constructor
     def __init__(self, classes, smoothing, smoothing_param):
@@ -74,29 +77,35 @@ class NaiveBayesClassifier(TextClassifier):
         :param c: Example's outputs
         :param verbose: Verbosity
         """
-        # Tokens
-        tokens = spacy.load(self._lang)(x)
-
         # For each token
-        for token in tokens:
+        for token in x.keys():
+            # Count
+            token_count = x[token]
+
             # Filtering
-            filtered, token_text = self._filter_token(token)
-            token_text = token_text.lower()
+            token = token.replace(u"\n", u"")
+            token = token.replace(u"\t", u"")
+            token = token.replace(u"\r", u"")
 
-            if filtered:
-                # Add to conditional prob.
-                try:
-                    self._p_fi_c[c][token_text] += 1.0
-                except KeyError:
-                    self._p_fi_c[c][token_text] = 1.0
-                # end try
+            # Add to conditional prob.
+            try:
+                self._p_fi_c[c][token] += token_count
+            except KeyError:
+                self._p_fi_c[c][token] = token_count
+            # end try
 
-                # Add class prob
-                self._p_c[c] += 1.0
+            # Add to collection prob
+            try:
+                self._p_fi[token] += token_count
+            except KeyError:
+                self._p_fi[token] = token_count
+            # end try
 
-                # Add total token count
-                self._n_tokens += 1.0
-            # end if
+            # Add class prob
+            self._p_c[c] += token_count
+
+            # Add total token count
+            self._n_tokens += token_count
         # end for
     # end train
 
@@ -106,7 +115,7 @@ class NaiveBayesClassifier(TextClassifier):
         Get token count
         :return:
         """
-        return 0
+        return self._n_tokens
     # end get_token_count
 
     ##############################################
@@ -129,17 +138,39 @@ class NaiveBayesClassifier(TextClassifier):
         To string
         :return:
         """
-        """return u"NaiveBayesClassifier(n_classes={}, n_tokens={}, mem_size={}o, " \
+        return u"NaiveBayesClassifier(n_classes={}, n_tokens={}, mem_size={}o, " \
                u"token_counters_mem_size={} Go, class_counters_mem_size={} Go, n_total_token={})" \
             .format(self._n_classes, self.get_token_count(),
-                    getsizeof(self), round(getsizeof(self._token_counters) / 1073741824.0, 4),
-                    round(getsizeof(self._class_counters) / 1073741824.0, 4), self._n_total_token)"""
-        return u""
+                    getsizeof(self), round(getsizeof(self._p_fi_c) / 1073741824.0, 4),
+                    round(getsizeof(self._p_c) / 1073741824.0, 4), self._n_tokens)
     # end __str__
 
     ##############################################
     # Private
     ##############################################
+
+    # Finalize the training
+    def _finalize_training(self, verbose=False):
+        """
+        Finalize training.
+        :param verbose: Verbosity
+        """
+        # Finalize P(Fi = fi)
+        for c in self._classes:
+            # Classes probs
+            self._p_c[c] /= self._n_tokens
+
+            # For each tokens
+            for token in self._p_fi_c[c]:
+                self._p_fi_c[c][token] = (self._p_fi_c[c][token] / self._n_tokens) / self._p_c[c]
+            # end for
+        # end for
+
+        # Collecton probs
+        for token in self._p_fi:
+            self._p_fi[token] /= self._n_tokens
+        # end for
+    # end _finalize_training
 
     # Classify a document
     def _classify(self, x):
@@ -148,7 +179,59 @@ class NaiveBayesClassifier(TextClassifier):
         :param x: Document's text.
         :return: A tuple with found class and values per classes.
         """
-        pass
+        # Class probs
+        classes_probabilities = dict()
+        for c in self._classes:
+            classes_probabilities[c] = decimal.Decimal(1.0)
+        # end for
+
+        # Document length
+        doc_len = 0.0
+        for token in x:
+            doc_len += x[token]
+        # end for
+
+        # For each classes
+        for c in self._classes:
+            # For each tokens
+            for token in x.keys():
+                # Token count
+                token_count = decimal.Decimal(x[token])
+
+                # Prob Fi knowning c
+                try:
+                    p_fi_c = decimal.Decimal(self._p_fi_c[c][token])
+                except KeyError:
+                    p_fi_c = decimal.Decimal(0.0)
+                # end try
+
+                # Prob Fi
+                try:
+                    p_fi = decimal.Decimal(self._p_fi[token])
+                except KeyError:
+                    p_fi = decimal.Decimal(0.0)
+                # end try
+
+                # Token prob exists
+                if p_fi > 0:
+                    p_fi_c = NaiveBayesClassifier.smooth(self._smoothing, p_fi_c, p_fi, doc_len, self._smoothing_param)
+                    classes_probabilities[c] *= decimal.Decimal(p_fi_c) * token_count
+                # end if
+            # end for
+        # end for
+
+        # Get max
+        max = decimal.Decimal(0.0)
+        max_class = None
+        for c in self._classes:
+            c_probs = decimal.Decimal(self._p_c[c]) * classes_probabilities[c]
+            if c_probs > max:
+                max = c_probs
+                max_class = c
+            # end if
+        # end for
+
+        return max_class, classes_probabilities
     # end _classify
 
     # Reset the classifier
@@ -176,6 +259,9 @@ class NaiveBayesClassifier(TextClassifier):
         for c in self._classes:
             self._p_c[c] = 0.0
         # end for
+
+        # Collection_prob
+        self._p_fi = dict()
 
         # Total count
         self._n_tokens = 0
