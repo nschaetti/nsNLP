@@ -62,6 +62,11 @@ class BagOfWords(object):
             # Token text
             token_text = token.text
 
+            # Uppercase?
+            if not self._uppercase:
+                token_text = token_text.lower()
+            # end if
+
             # Add
             try:
                 self._voc_count[token_text] += 1.0
