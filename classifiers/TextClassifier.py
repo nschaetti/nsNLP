@@ -72,6 +72,19 @@ class TextClassifier(object):
         pass
     # end train
 
+    # Train a set
+    def training(self, samples, verbose=False):
+        """
+        Train a set
+        :param samples:
+        :param verbose:
+        :return:
+        """
+        for sample in samples:
+            self.train(sample[0], sample[1], verbose)
+        # end for
+    # end training
+
     # Finalize model training
     def finalize(self, verbose=False):
         """
@@ -138,7 +151,7 @@ class TextClassifier(object):
         # end if
 
         # Classify the document
-        return self._classify(x.x())
+        return self._classify(x)
     # end __class__
 
     # To str
