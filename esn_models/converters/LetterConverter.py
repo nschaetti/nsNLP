@@ -34,14 +34,14 @@ class LetterConverter(Converter):
     """
 
     # Constructor
-    def __init__(self, lang='en', tag_to_symbol=None, resize=-1, pca_model=None, fill_in=False):
+    def __init__(self, tag_to_symbol=None, resize=-1, pca_model=None, fill_in=False):
         """
         Constructor
         :param lang: Language model
         :param tag_to_symbol: Tag to symbol conversion array.
         :param resize: Reduce dimensionality.
         """
-        super(LetterConverter, self).__init__(lang, tag_to_symbol, resize, pca_model)
+        super(LetterConverter, self).__init__(tag_to_symbol, resize, pca_model)
         self._fill_in = fill_in
     # end __init__
 
