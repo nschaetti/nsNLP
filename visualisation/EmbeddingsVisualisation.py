@@ -1,5 +1,6 @@
 
 # Imports
+import codecs
 import numpy as np
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
@@ -10,6 +11,45 @@ class EmbeddingsVisualisation(object):
     """
     Tools to visualize embeddings
     """
+
+    # Save CSV of ordered measures
+    @staticmethod
+    def ordered_distances_csv(output, distances_matrix, captions, reverse=False):
+        """
+        Save CSV of ordered measures
+        :param output: Output file
+        :param distances_matrix:
+        :param captions:
+        :return:
+        """
+        # N doc
+        n_docs = distances_matrix.shape[0]
+
+        # Ordered distances
+        ordered_distances = list()
+
+        # For each distance
+        for index1 in range(n_docs):
+            for index2 in range(n_docs):
+                if index1 != index2:
+                    ordered_distances.append((index1, index2, distances_matrix[index1, index2]))
+                # end if
+            # end for
+        # end for
+
+        # Order distances
+        ordered_distances = sorted(ordered_distances, key=lambda tup: tup[2], reverse=reverse)
+
+        # Open file
+        with codecs.open(output, 'w', encoding='utf-8') as f:
+            # Header
+            f.write(u"Author1,Author2,Similarity\n")
+            # For each distance
+            for index1, index2, distance in ordered_distances:
+                f.write(u"{},{},{}\n".format(captions[index1], captions[index2], distance))
+            # end for
+        # end with
+    # end ordered_distances_csv
 
     # Visualize embeddings with TSNE
     @staticmethod
