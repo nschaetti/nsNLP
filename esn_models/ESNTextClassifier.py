@@ -152,7 +152,17 @@ class ESNTextClassifier(TextClassifier):
         Get embeddings
         :return: Embedding matrix
         """
-        return self._readout.beta
+        # Embeddings
+        embeddings = dict()
+
+        # For each classes
+        for c in self._classes:
+            class_index = self._class_to_int(c)
+
+            # Get
+            embeddings[c] = self._readout.beta[:, class_index]
+        # end for
+        return embeddings
     # end get_embeddings
 
     ##############################################
