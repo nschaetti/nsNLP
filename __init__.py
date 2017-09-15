@@ -11,6 +11,7 @@ import classifiers
 import data
 import deep_models
 import esn_models
+import esn_models.converters
 import features
 import lsa_models
 import lstm_models

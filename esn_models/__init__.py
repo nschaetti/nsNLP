@@ -24,3 +24,9 @@
 
 # Import packages
 from ESNTextClassifier import ESNTextClassifier
+from converters.FuncWordConverter import FuncWordConverter
+from converters.LetterConverter import LetterConverter
+from converters.OneHotConverter import OneHotConverter
+from converters.PosConverter import PosConverter
+from converters.TagConverter import TagConverter
+from converters.WVConverter import WVConverter
