@@ -47,6 +47,20 @@ class SpacyWord2Vec(Word2Vec):
     # Override
     ############################################
 
+    # Transform a list of tokens
+    def __call__(self, tokens):
+        """
+        Transform a list of tokens
+        :param tokens:
+        :return:
+        """
+        vectors = list()
+        for token in tokens:
+            vectors.append(self[token])
+        # end for
+        return vectors
+    # end __call__
+
     # Override get item
     def __getitem__(self, item):
         """
@@ -54,7 +68,7 @@ class SpacyWord2Vec(Word2Vec):
         :param item:
         :return:
         """
-
+        return self._nlp(item).vector
     # end __getitem__
 
 # end Word2Vec
