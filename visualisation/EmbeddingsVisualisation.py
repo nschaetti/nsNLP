@@ -12,6 +12,22 @@ class EmbeddingsVisualisation(object):
     Tools to visualize embeddings
     """
 
+    # Save node CSV
+    @staticmethod
+    def node_csv(output, nodes, captions):
+        # Open the node file
+        with codecs.open(output) as f:
+            # Header
+            f.write(u"Id,Label\n")
+
+            # For each doc
+            for document in nodes:
+                document_caption = captions[document]
+                f.write(u"{},{}\n".format(document, document_caption))
+            # end for
+        # end with
+    # end node_csv
+
     # Save CSV of ordered measures
     @staticmethod
     def ordered_distances_csv(output, distances_matrix, captions, reverse=False):
