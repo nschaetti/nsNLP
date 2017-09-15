@@ -15,6 +15,13 @@ class EmbeddingsVisualisation(object):
     # Save node CSV
     @staticmethod
     def node_csv(output, nodes, captions):
+        """
+        Save node CSV
+        :param output:
+        :param nodes:
+        :param captions:
+        :return:
+        """
         # Open the node file
         with codecs.open(output) as f:
             # Header
@@ -27,6 +34,28 @@ class EmbeddingsVisualisation(object):
             # end for
         # end with
     # end node_csv
+
+    # Save weights graph
+    @staticmethod
+    def weights_csv(output, elements, document2index, similarity_matrix, links=False):
+        # Open the edge file
+        with codecs.open(output, 'w', encoding='utf-8') as f:
+            # Header
+            f.write(u"Source,Target,Weight\n")
+
+            # Compute distance between each documents
+            for document1 in elements:
+                for document2 in elements:
+                    if document1 != document2:
+                        document1_index = document2index[document1.get_path()]
+                        document2_index = document2index[document2.get_path()]
+                        similarity = similarity_matrix[document1_index, document2_index]
+                        f.write(u"{},{},{}".format(document1_index, document2_index, similarity))
+                    # end if
+                # end for
+            # end for
+        # end with
+    # end weights_csv
 
     # Save CSV of ordered measures
     @staticmethod
