@@ -71,7 +71,7 @@ class ESNTextClassifier(TextClassifier):
         self._input_sparsity = input_sparsity
         self._spectral_radius = spectral_radius
         self._converter = converter
-        self._examples = dict()
+        self._examples = list()
         self._last_y = []
         self._aggregation = aggregation
         self._author_token_count = np.zeros(self._n_classes)
@@ -94,7 +94,7 @@ class ESNTextClassifier(TextClassifier):
         self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
 
         # Logger
-        self._logger = logging.getLogger(name="RCNLP")
+        self._logger = logging.getLogger(name=u"RCNLP")
     # end __init__
 
     ##############################################
@@ -112,15 +112,13 @@ class ESNTextClassifier(TextClassifier):
     # end name
 
     # Train
-    def train(self, x, y, verbose=False):
+    def train(self, x, y):
         """
         Add a training example
         :param x: Text file example
         :param y: Corresponding author
-        :param verbose: Verbosity
         """
-        self._examples[x] = y
-        self._verbose = verbose
+        self._examples.append((x, y))
     # end train
 
     # Show debugging informations
@@ -161,15 +159,25 @@ class ESNTextClassifier(TextClassifier):
     # Override
     ##############################################
 
-    # To String
+    # To string
     def __str__(self):
+        """
+        To string
+        :return:
+        """
+        return "EchoWordClassifier(n_classes={}, size={}, spectral_radius={}, leaky_rate={}, mem_size={}o)".format(
+            self._n_classes, self._output_dim, self._spectral_radius, self._leak_rate, getsizeof(self))
+    # end __str__
+
+    # To unicode
+    def __unicode__(self):
         """
         To string
         :return:
         """
         return u"EchoWordClassifier(n_classes={}, size={}, spectral_radius={}, leaky_rate={}, mem_size={}o)".format(
             self._n_classes, self._output_dim, self._spectral_radius, self._leak_rate, getsizeof(self))
-    # end __str__
+    # end __unicode__
 
     ##############################################
     # Private
@@ -186,20 +194,16 @@ class ESNTextClassifier(TextClassifier):
         Y = list()
 
         # For each training text file
-        for index, text in enumerate(self._examples.keys()):
-            author_index = self._examples[text]
+        for index, (x, y) in enumerate(self._examples):
+            author_index = self._class_to_int(y)
             if verbose:
-                self._logger.debug(u"Training on {}/{}...".format(index, len(self._examples.keys())))
+                self._logger.debug(u"Training on {}/{}...".format(index, len(self._examples)))
             # end if
-            x, y = self._generate_training_data(text, self._examples[text])
+            x, y = self._generate_training_data(x, author_index)
             X.append(x)
             Y.append(y)
             self._author_token_count[author_index] += x.shape[0]
-            #self._logger.debug(u"Author {} has {} tokens".format(author_index, self._author_token_count[author_index]))
         # end for
-        """for i in range(self._n_classes):
-            self._logger.debug(u"Author {} has {} tokens".format(i, self._author_token_count[i]))
-        # end if"""
 
         # Create data
         data = [None, zip(X, Y)]
