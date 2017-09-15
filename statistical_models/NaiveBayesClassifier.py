@@ -282,8 +282,12 @@ class NaiveBayesClassifier(TextClassifier):
         :param mu:
         :return:
         """
-        return (float(doc_length) / (float(doc_length) + float(mu))) * doc_prob + \
-               (float(mu) / (float(mu) + float(doc_length))) * col_prob
+        doc_length = decimal.Decimal(doc_length)
+        mu = decimal.Decimal(mu)
+        doc_prob = decimal.Decimal(doc_prob)
+        col_prob = decimal.Decimal(col_prob)
+        doc_length = decimal.Decimal(doc_length)
+        return (doc_length / (doc_length + mu)) * doc_prob + (mu / (mu + doc_length)) * col_prob
     # end smooth
 
     # Jelinek Mercer smoothing function
@@ -295,7 +299,7 @@ class NaiveBayesClassifier(TextClassifier):
         :param param_lambda:
         :return:
         """
-        return (1.0 - param_lambda) * doc_prob + param_lambda * col_prob
+        return (decimal.Decimal(1.0 - param_lambda) * doc_prob) + (decimal.Decimal(param_lambda) * col_prob)
     # end smooth
 
     # Smoothing function
