@@ -21,5 +21,6 @@ import tfidf
 import tokenization
 import tools
 import validation
+import visualisation
 
-__all__ = ['classifiers', 'data', 'deep_models', 'esn_models', 'features', 'lsa_models', 'lstm_models', 'rnn_models', 'statistical_models', 'tfidf', 'tokenization', 'tools', 'validation']
+__all__ = ['classifiers', 'data', 'deep_models', 'esn_models', 'features', 'lsa_models', 'lstm_models', 'rnn_models', 'statistical_models', 'tfidf', 'tokenization', 'tools', 'validation', 'visualisation']
