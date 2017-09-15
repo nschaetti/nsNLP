@@ -37,20 +37,36 @@ class EmbeddingsVisualisation(object):
 
     # Save weights graph
     @staticmethod
-    def weights_csv(output, elements, document2index, similarity_matrix, links=False):
+    def weights_csv(output, similarity_matrix, links_matrix=None):
+        """
+        Save weights graph
+        :param output:
+        :param elements:
+        :param document2index:
+        :param similarity_matrix:
+        :param links_matrix:
+        :return:
+        """
+        # Number of docs
+        n_docs = similarity_matrix.shape[0]
+
         # Open the edge file
         with codecs.open(output, 'w', encoding='utf-8') as f:
             # Header
             f.write(u"Source,Target,Weight\n")
 
             # Compute distance between each documents
-            for document1 in elements:
-                for document2 in elements:
-                    if document1 != document2:
-                        document1_index = document2index[document1.get_path()]
-                        document2_index = document2index[document2.get_path()]
-                        similarity = similarity_matrix[document1_index, document2_index]
-                        f.write(u"{},{},{}".format(document1_index, document2_index, similarity))
+            for index1 in range(n_docs):
+                for index2 in range(n_docs):
+                    if index1 != index2:
+                        similarity = similarity_matrix[index1, index2]
+                        if links_matrix is not None:
+                            if links_matrix[index1, index2] == 1.0:
+                                f.write(u"{},{},{}\n".format(index1, index2, similarity))
+                            # end if
+                        else:
+                            f.write(u"{},{},{}".format(index1, index2, similarity))
+                        # end if
                     # end if
                 # end for
             # end for
