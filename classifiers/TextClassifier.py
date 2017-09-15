@@ -62,18 +62,17 @@ class TextClassifier(object):
     # end name
 
     # Train the model
-    def train(self, x, y, verbose=False):
+    def train(self, x, y):
         """
         Train the model
         :param x: Example's inputs.
         :param y: Example's outputs.
-        :param verbose: Verbosity
         """
         pass
     # end train
 
     # Train a set
-    def training(self, samples, verbose=False):
+    def training(self, samples):
         """
         Train a set
         :param samples:
@@ -81,7 +80,7 @@ class TextClassifier(object):
         :return:
         """
         for sample in samples:
-            self.train(sample[0], sample[1], verbose)
+            self.train(sample[0], sample[1])
         # end for
     # end training
 
