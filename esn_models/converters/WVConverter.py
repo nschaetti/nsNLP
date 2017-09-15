@@ -23,7 +23,6 @@
 #
 
 import numpy as np
-import spacy
 from Converter import Converter
 
 
@@ -60,8 +59,7 @@ class WVConverter(Converter):
         ok = False
         for index, word in enumerate(tokens):
             if word not in exclude:
-                word_text = word.text
-                word_text = word_text.replace(u"\n", u"")
+                word_text = word.replace(u"\n", u"")
                 word_text = word_text.replace(u"\t", u"")
                 word_text = word_text.replace(u"\r", u"")
                 if len(word_text) > 0:
