@@ -35,7 +35,7 @@ class Converter(object):
     """
 
     # Constructor
-    def __init__(self, lang='en', tag_to_symbol=None, resize=-1, pca_model=None, upper_level=None):
+    def __init__(self, tag_to_symbol=None, resize=-1, pca_model=None, upper_level=None):
         """
         Constructor
         :param lang: Language model
@@ -44,7 +44,6 @@ class Converter(object):
         """
         # Properties
         self._resize = resize
-        self._lang = lang
         self._pca_model = pca_model
         self._upper_level = upper_level
 
@@ -135,10 +134,10 @@ class Converter(object):
     ##############################################
 
     # Convert a string to a ESN input
-    def __call__(self, text, exclude=list(), word_exclude=list()):
+    def __call__(self, tokens, exclude=list(), word_exclude=list()):
         """
         Convert a string to a ESN input
-        :param text: Text to convert.
+        :param tokens: Text to convert.
         :param exclude: List of tags to exclude.
         :param word_exclude: List of words to exclude.
         :return: A list of symbols.
