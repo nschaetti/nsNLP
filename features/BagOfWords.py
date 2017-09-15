@@ -20,7 +20,6 @@
 # Copyright Nils Schaetti, University of Neuchâtel <nils.schaetti@unine.ch>
 
 # Import packages
-import spacy
 
 
 # Bag of Words
@@ -30,12 +29,11 @@ class BagOfWords(object):
     """
 
     # Constructor
-    def __init__(self, lang, uppercase=False):
+    def __init__(self, uppercase=False):
         """
         Constructor
         :param text:
         """
-        self._lang = lang
         self._uppercase = uppercase
         self._voc_count = dict()
     # end __init__
@@ -49,29 +47,23 @@ class BagOfWords(object):
     #########################################
 
     # Call
-    def __call__(self, x):
+    def __call__(self, tokens):
         """
         Call
         :return:
         """
-        # Tokens
-        tokens = spacy.load(self._lang)(x)
-
         # For each tokens
         for token in tokens:
-            # Token text
-            token_text = token.text
-
             # Uppercase?
             if not self._uppercase:
-                token_text = token_text.lower()
+                token = token.lower()
             # end if
 
             # Add
             try:
-                self._voc_count[token_text] += 1.0
+                self._voc_count[token] += 1.0
             except KeyError:
-                self._voc_count[token_text] = 1.0
+                self._voc_count[token] = 1.0
             # end try
         # end for
 
