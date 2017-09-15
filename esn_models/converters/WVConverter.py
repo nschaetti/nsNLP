@@ -32,6 +32,20 @@ class WVConverter(Converter):
     Convert text to word vectors
     """
 
+    # Constructor
+    def __init__(self, word2vec, tag_to_symbol=None, resize=-1, pca_model=None, upper_level=None):
+        """
+        Constructor
+        :param word2vec:
+        :param tag_to_symbol:
+        :param resize:
+        :param pca_model:
+        :param upper_level:
+        """
+        super(WVConverter, self).__init__(tag_to_symbol, resize, pca_model, upper_level)
+        self._word2vec = word2vec
+    # end __init__
+
     ##############################################
     # Public
     ##############################################
@@ -63,7 +77,7 @@ class WVConverter(Converter):
                 word_text = word_text.replace(u"\t", u"")
                 word_text = word_text.replace(u"\r", u"")
                 if len(word_text) > 0:
-                    word_vector = word.vector
+                    word_vector = self._word2vec[word_text]
                     if np.average(word_vector) != 0:
                         if not ok:
                             doc_array = word_vector
