@@ -34,14 +34,14 @@ class FuncWordConverter(Converter):
     """
 
     # Constructor
-    def __init__(self, lang='en', tag_to_symbol=None, resize=-1, pca_model=None, fill_in=False):
+    def __init__(self, tag_to_symbol=None, resize=-1, pca_model=None, fill_in=False):
         """
         Constructor
         :param lang: Language model
         :param tag_to_symbol: Tag to symbol conversion array.
         :param resize: Reduce dimensionality.
         """
-        super(FuncWordConverter, self).__init__(lang, tag_to_symbol, resize, pca_model)
+        super(FuncWordConverter, self).__init__(tag_to_symbol, resize, pca_model)
         self._fill_in = fill_in
     # end __init__
 
@@ -93,19 +93,12 @@ class FuncWordConverter(Converter):
     ##############################################
 
     # Convert a string to a ESN input
-    def __call__(self, text, exclude=list(), word_exclude=list()):
+    def __call__(self, tokens, exclude=list(), word_exclude=list()):
         """
         Convert a string to a ESN input
         :param text: The text to convert.
         :return: An numpy array of inputs.
         """
-
-        # Load language model
-        nlp = spacy.load(self._lang)
-
-        # Process text
-        doc = nlp(text)
-
         # Resulting numpy array
         doc_array = np.array([])
 
@@ -114,7 +107,7 @@ class FuncWordConverter(Converter):
 
         # For each words
         init = False
-        for index, word in enumerate(doc):
+        for index, word in enumerate(tokens):
             if word not in word_exclude:
                 sym = self.tag_to_symbol(word.text)
                 if sym is None and self._fill_in:
