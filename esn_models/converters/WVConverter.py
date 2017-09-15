@@ -42,20 +42,15 @@ class WVConverter(Converter):
     ##############################################
 
     # Convert a string to a ESN input
-    def __call__(self, text, exclude=list(), word_exclude=list()):
+    def __call__(self, tokens, exclude=list(), word_exclude=list()):
         """
         Convert a string to a ESN input
-        :param text: The text to convert.
+        :param tokens: The text to convert.
         :return: An numpy array of inputs.
         """
-        # Load language model
-        nlp = spacy.load(self._lang)
-
         # Process text
         if self._upper_level is not None:
-            doc = nlp(self._upper_level(text))
-        else:
-            doc = nlp(text)
+            tokens = self._upper_level(tokens)
         # end if
 
         # Resulting numpy array
@@ -63,7 +58,7 @@ class WVConverter(Converter):
 
         # For each token
         ok = False
-        for index, word in enumerate(doc):
+        for index, word in enumerate(tokens):
             if word not in exclude:
                 word_text = word.text
                 word_text = word_text.replace(u"\n", u"")
@@ -82,9 +77,6 @@ class WVConverter(Converter):
                 # end if
             # end if
         # end for
-
-        # Del spacy nlp
-        del nlp
 
         return self.reduce(doc_array)
     # end convert
