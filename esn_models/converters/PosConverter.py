@@ -63,19 +63,12 @@ class PosConverter(Converter):
     ##############################################
 
     # Convert a string to a ESN input
-    def __call__(self, text, exclude=list(), word_exclude=list()):
+    def __call__(self, tokens, exclude=list(), word_exclude=list()):
         """
         Convert a string to a ESN input
         :param text: The text to convert.
         :return: An numpy array of inputs.
         """
-
-        # Load language model
-        nlp = spacy.load(self._lang)
-
-        # Process text
-        doc = nlp(text)
-
         # Resulting numpy array
         doc_array = np.array([])
 
@@ -83,7 +76,7 @@ class PosConverter(Converter):
         null_symbol = np.zeros((1, len(self.get_tags())))
 
         # For each words
-        for index, word in enumerate(doc):
+        for index, word in enumerate(tokens):
             if word.pos_ not in exclude and word not in word_exclude:
                 sym = self.tag_to_symbol(word.pos_)
                 if sym is None and self._fill_in:
@@ -94,9 +87,9 @@ class PosConverter(Converter):
                         doc_array = sym
                     else:
                         doc_array = np.vstack((doc_array, sym))
-                        # end if
-                        # end if
-                        # end if
+                    # end if
+                # end if
+            # end if
         # end for
 
         return self.reduce(doc_array)
