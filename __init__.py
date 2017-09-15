@@ -8,6 +8,7 @@
 
 # Imports
 import classifiers
+import clustering
 import data
 import deep_models
 import esn_models
@@ -23,4 +24,4 @@ import tools
 import validation
 import visualisation
 
-__all__ = ['classifiers', 'data', 'deep_models', 'esn_models', 'features', 'lsa_models', 'lstm_models', 'rnn_models', 'statistical_models', 'tfidf', 'tokenization', 'tools', 'validation', 'visualisation']
+__all__ = ['classifiers', 'clustering', 'data', 'deep_models', 'esn_models', 'features', 'lsa_models', 'lstm_models', 'rnn_models', 'statistical_models', 'tfidf', 'tokenization', 'tools', 'validation', 'visualisation']
