@@ -35,7 +35,6 @@ class BagOf2Grams(object):
         :param text:
         """
         self._uppercase = uppercase
-        self._voc_count = dict()
     # end __init__
 
     #########################################
@@ -52,6 +51,9 @@ class BagOf2Grams(object):
         Call
         :return:
         """
+        # Vocabulary
+        voc_count = dict()
+
         # Preceding token
         preceding_token = None
 
@@ -70,9 +72,9 @@ class BagOf2Grams(object):
 
                 # Add
                 try:
-                    self._voc_count[bigram] += 1.0
+                    voc_count[bigram] += 1.0
                 except KeyError:
-                    self._voc_count[bigram] = 1.0
+                    voc_count[bigram] = 1.0
                 # end try
 
                 # Preceding token
@@ -80,7 +82,7 @@ class BagOf2Grams(object):
             # end if
         # end for
 
-        return self._voc_count
+        return voc_count
     # end __call__
 
     #########################################
