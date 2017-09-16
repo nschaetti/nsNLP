@@ -69,8 +69,81 @@ class NaiveBayesClassifier(TextClassifier):
         return u"Naive Bayes classifier with {} smoothing = {}".format(self._smoothing, self._smoothing_param)
     # end name
 
-    # Train the model
-    def train(self, x, c, verbose=False):
+    # Get token count
+    def get_token_count(self):
+        """
+        Get token count
+        :return:
+        """
+        return self._n_tokens
+    # end get_token_count
+
+    # Get token count
+    def get_n_tokens(self, c=None):
+        """
+        Get token count
+        :return:
+        """
+        if c is None:
+            return self._n_tokens
+        else:
+            return self._p_c[c]
+        # end if
+    # end get_n_tokens
+
+    # Get class probs
+    def class_probs(self):
+        """
+        Get class probs
+        :return:
+        """
+        return self._p_c
+    # end class_probs
+
+    ##############################################
+    # Override
+    ##############################################
+
+    # Get token probability
+    def __getitem__(self, item):
+        """
+        Get token probability
+        :param item:
+        :return:
+        """
+        result = dict()
+
+        # For each class
+        for c in self._classes:
+            try:
+                result[c] = self._p_fi_c[c][item]
+            except KeyError:
+                result[c] = 0.0
+            # end try
+        # end for
+
+        return result
+    # end __getitem__
+
+    # To unicode
+    def __unicode__(self):
+        """
+        To string
+        :return:
+        """
+        return u"NaiveBayesClassifier(n_classes={}, n_tokens={}, mem_size={}o, " \
+               u"token_counters_mem_size={} Go, class_counters_mem_size={} Go, n_total_token={})" \
+            .format(self._n_classes, self.get_token_count(),
+                    getsizeof(self), round(getsizeof(self._p_fi_c) / 1073741824.0, 4),
+                    round(getsizeof(self._p_c) / 1073741824.0, 4), self._n_tokens)
+    # end __str__
+
+    ##############################################
+    # Private
+    ##############################################
+
+    # Training the model
+    def _train(self, x, c, verbose=False):
         """
         Train
         :param x: Example's inputs
@@ -107,47 +180,9 @@ class NaiveBayesClassifier(TextClassifier):
             # Add total token count
             self._n_tokens += token_count
         # end for
-    # end train
 
-    # Get token count
-    def get_token_count(self):
-        """
-        Get token count
-        :return:
-        """
-        return self._n_tokens
-    # end get_token_count
-
-    ##############################################
-    # Override
-    ##############################################
-
-    # Get token probability
-    def __getitem__(self, item):
-        """
-        Get token probability
-        :param item:
-        :return:
-        """
-        pass
-    # end __getitem__
-
-    # To unicode
-    def __unicode__(self):
-        """
-        To string
-        :return:
-        """
-        return u"NaiveBayesClassifier(n_classes={}, n_tokens={}, mem_size={}o, " \
-               u"token_counters_mem_size={} Go, class_counters_mem_size={} Go, n_total_token={})" \
-            .format(self._n_classes, self.get_token_count(),
-                    getsizeof(self), round(getsizeof(self._p_fi_c) / 1073741824.0, 4),
-                    round(getsizeof(self._p_c) / 1073741824.0, 4), self._n_tokens)
-    # end __str__
-
-    ##############################################
-    # Private
-    ##############################################
+        return True
+    # end _train
 
     # Finalize the training
     def _finalize_training(self, verbose=False):
