@@ -23,7 +23,9 @@
 #
 
 # Import
+import pickle
 import numpy as np
+import sys
 
 
 # Text classifier
@@ -68,7 +70,11 @@ class TextClassifier(object):
         :param x: Example's inputs.
         :param y: Example's outputs.
         """
-        pass
+        if not self._training_finalized:
+            return self._train(x, y)
+        else:
+            return False
+        # end if
     # end train
 
     # Train a set
@@ -132,6 +138,27 @@ class TextClassifier(object):
         pass
     # end _get_debugging_data
 
+    # Save the model
+    def save(self, filename):
+        """
+        Save the model to a Pickle file
+        :param filename:
+        :return:
+        """
+        with open(filename, 'w') as f:
+            pickle.dump(self, f)
+        # end with
+    # end save
+
+    # Finalized?
+    def finalized(self):
+        """
+        Finalized?
+        :return:
+        """
+        return self._training_finalized
+    # end finalized
+
     ##############################################
     # Override
     ##############################################
@@ -165,6 +192,17 @@ class TextClassifier(object):
     ##############################################
     # Private
     ##############################################
+
+    # Train the model
+    def _train(self, x, c, verbose=False):
+        """
+        Train
+        :param x: Example's inputs
+        :param c: Example's outputs
+        :param verbose: Verbosity
+        """
+        pass
+    # end _train
 
     # Filter token
     def _filter_token(self, word):
@@ -230,12 +268,27 @@ class TextClassifier(object):
         :param class_name: Class name
         :return: Integer
         """
-        for index, name in self._classes:
+        for index, name in enumerate(self._classes):
             if name == class_name:
                 return index
             # end if
         # end for
         return -1
     # end class_to_int
+
+    ##########################################
+    # Static
+    ##########################################
+
+    # Load the model
+    @staticmethod
+    def load(opt):
+        """
+        Load the model from a file
+        :param opt: Loading option
+        :return: The model object
+        """
+        return pickle.load(open(opt, 'r'))
+    # end load
 
 # end TextClassifier
