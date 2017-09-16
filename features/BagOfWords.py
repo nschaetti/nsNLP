@@ -35,7 +35,6 @@ class BagOfWords(object):
         :param text:
         """
         self._uppercase = uppercase
-        self._voc_count = dict()
     # end __init__
 
     #########################################
@@ -52,6 +51,9 @@ class BagOfWords(object):
         Call
         :return:
         """
+        # Vocabulary
+        voc_count = dict()
+
         # For each tokens
         for token in tokens:
             # Uppercase?
@@ -61,13 +63,13 @@ class BagOfWords(object):
 
             # Add
             try:
-                self._voc_count[token] += 1.0
+                voc_count[token] += 1.0
             except KeyError:
-                self._voc_count[token] = 1.0
+                voc_count[token] = 1.0
             # end try
         # end for
 
-        return self._voc_count
+        return voc_count
     # end __call__
 
     #########################################
