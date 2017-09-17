@@ -24,6 +24,36 @@
 
 # Imports
 from .Tokenizer import Tokenizer
-from .NLTKTokenizer import NLTKTokenizer
-from .NLTKTweetTokenizer import NLTKTweetTokenizer
-from .SpacyTokenizer import SpacyTokenizer
+from nltk.tokenize import TweetTokenizer
+
+
+# NLTK tokenizer
+class NLTKTweetTokenizer(Tokenizer):
+    """
+    NLTK tokenizer
+    """
+
+    # Constructor
+    def __init__(self, lang='english'):
+        """
+        Constructor
+        """
+        super(NLTKTweetTokenizer, self).__init__(lang)
+        self._tknzr = TweetTokenizer()
+    # end __init__
+
+    ###########################################
+    # Override
+    ###########################################
+
+    # Transform text to tokens
+    def __call__(self, text):
+        """
+        Transform text to tokens
+        :param text:
+        :return:
+        """
+        return self._tknzr.tokenize(text)
+    # end __call__
+
+# end Tokenizer
