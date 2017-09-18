@@ -73,7 +73,7 @@ class OneHotConverter(Converter):
         self._uppercase = uppercase
 
         # Generate vocabulary matrix
-        self._voc_matrix = self._generate_voc_matrix()
+        #self._voc_matrix = self._generate_voc_matrix()
     # end __init__
 
     ##############################################
@@ -242,24 +242,30 @@ class OneHotConverter(Converter):
         # Transform
         item = self._transform_word(item)
 
-        # Return vector
+        # Word index
         try:
-            word_vector = self._voc_matrix[self._word2index[item], :]
-            self._inc_counters(item)
-            return word_vector
+            word_index = self._word2index[item]
         except KeyError:
             # Check
             if self._word_pos < self._voc_size:
-                self._word2index[item] = self._word_pos
-                self._index2word[self._word_pos] = item
-                word_vector = self._voc_matrix[self._word_pos, :]
+                word_index = self._word_pos
+                self._word2index[item] = word_index
+                self._index2word[word_index] = item
                 self._word_pos += 1
                 self._inc_counters(item)
-                return word_vector
             else:
                 raise OneHotVectorFullException("One-hot vector representations are full")
             # end if
         # end try
+
+        # Increment counters
+        self._inc_counters(item)
+
+        # Generate vector
+        word_vector = sp.csr_matrix((1, self._voc_size))
+        word_vector[0, word_index] = 1
+
+        return word_vector
     # end __getattr__
 
     # Set a word vector
@@ -273,7 +279,7 @@ class OneHotConverter(Converter):
         word = self._transform_word(word)
 
         # Word to vector
-        self._voc_matrix[self._word2index[word], :] = vector
+        #self._voc_matrix[self._word2index[word], :] = vector
     # end if
 
     # Convert a string to a ESN input
@@ -324,39 +330,6 @@ class OneHotConverter(Converter):
 
         return self.reduce(doc_array)
     # end convert
-
-    # Left multiplication
-    def __mul__(self, other):
-        """
-        Left multiplication
-        :param other:
-        :return:
-        """
-        self._voc_matrix *= other
-        return self
-    # end __mul__
-
-    # Right multiplication
-    def __rmul__(self, other):
-        """
-        Right multiplication
-        :param other:
-        :return:
-        """
-        self._voc_matrix *= other
-        return self
-    # end __rmul__
-
-    # Augmented assignment (mult)
-    def __imul__(self, other):
-        """
-        Augmented assignment (mult)
-        :param other:
-        :return:
-        """
-        self._voc_matrix *= other
-        return self
-    # end __imul__
 
     ##############################################
     # Private
