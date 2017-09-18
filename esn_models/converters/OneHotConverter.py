@@ -53,7 +53,7 @@ class OneHotConverter(Converter):
     """
 
     # Constructor
-    def __init__(self, dim=300, voc_size=5000, uppercase=False):
+    def __init__(self, voc_size=5000, uppercase=False):
         """
         Constructor
         :param dim: Input vector dimension
@@ -65,7 +65,6 @@ class OneHotConverter(Converter):
 
         # Properties
         self._voc_size = voc_size
-        self._dim = dim
         self._voc = dict()
         self._word_pos = 0
         self._word_index = dict()
@@ -79,15 +78,6 @@ class OneHotConverter(Converter):
     # Public
     ##############################################
 
-    # Get dimension
-    def get_dimension(self):
-        """
-        Get dimension
-        :return:
-        """
-        return self._dim
-    # end get_dimension
-
     # Words
     def words(self):
         """
@@ -97,13 +87,22 @@ class OneHotConverter(Converter):
         return self._voc.keys()
     # end words
 
+    # Vocabulary
+    def voc(self):
+        """
+        Vocabulary
+        :return:
+        """
+        return self._voc
+    # end voc
+
     # Get matrix
     def get_matrix(self):
         """
         Get matrix
         :return:
         """
-        words_matrix = np.zeros((len(self._voc.keys()), self._dim))
+        words_matrix = np.zeros((len(self._voc.keys()), self._voc_size))
         for index, word in enumerate(self.words()):
             words_matrix[index, :] = self._voc[word]
         # end for
@@ -210,7 +209,7 @@ class OneHotConverter(Converter):
         Create a new word vector randomly
         :param word: The word
         """
-        if self._word_pos < self._dim:
+        if self._word_pos < self._voc_size:
             self._voc[word] = self._one_hot()
             self._word_index[word] = self._word_pos - 1
             self._index_word[self._word_pos - 1] = word
@@ -373,7 +372,7 @@ class OneHotConverter(Converter):
         Map word to a one-hot vector
         :return: A new one-hot vector
         """
-        vec = np.zeros(self._dim, dtype='float64')
+        vec = np.zeros(self._voc_size, dtype='float64')
         vec[self._word_pos] = 1.0
         vec = sp.csr_matrix(vec)
         self._word_pos += 1
