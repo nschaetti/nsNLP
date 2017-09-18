@@ -65,18 +65,32 @@ class OneHotConverter(Converter):
 
         # Properties
         self._voc_size = voc_size
-        self._voc = dict()
+        self._word2index = dict()
         self._word_pos = 0
-        self._word_index = dict()
-        self._index_word = dict()
+        self._index2word = dict()
         self._word_counter = dict()
         self._total_counter = 0
         self._uppercase = uppercase
+
+        # Generate vocabulary matrix
+        self._voc_matrix = self._generate_voc_matrix()
     # end __init__
 
     ##############################################
     # Public
     ##############################################
+
+    # Reset converter
+    def reset(self):
+        """
+        Reset converter
+        """
+        self._word2index = dict()
+        self._word_pos = 0
+        self._index2word = dict()
+        self._word_counter = dict()
+        self._total_counter = 0
+    # end reset
 
     # Words
     def words(self):
@@ -84,30 +98,8 @@ class OneHotConverter(Converter):
         Words
         :return:
         """
-        return self._voc.keys()
+        return self._word2index.keys()
     # end words
-
-    # Vocabulary
-    def voc(self):
-        """
-        Vocabulary
-        :return:
-        """
-        return self._voc
-    # end voc
-
-    # Get matrix
-    def get_matrix(self):
-        """
-        Get matrix
-        :return:
-        """
-        words_matrix = np.zeros((len(self._voc.keys()), self._voc_size))
-        for index, word in enumerate(self.words()):
-            words_matrix[index, :] = self._voc[word]
-        # end for
-        return words_matrix
-    # end get_matrix
 
     # Get word by index
     def get_word_by_index(self, index):
@@ -116,8 +108,8 @@ class OneHotConverter(Converter):
         :param index: Index
         :return:
         """
-        if index < len(self._index_word):
-            return self._index_word[index]
+        if index < len(self._index2word):
+            return self._index2word[index]
         else:
             return None
         # end if
@@ -139,8 +131,11 @@ class OneHotConverter(Converter):
         :param word:
         :return:
         """
+        # Transform
+        word = self._transform_word(word)
+
         try:
-            return self._word_counter[word.lower()]
+            return self._word_counter[word]
         except KeyError:
             return 0
         # end try
@@ -181,7 +176,7 @@ class OneHotConverter(Converter):
         :param word_indexes:
         :return:
         """
-        self._word_index = word_indexes
+        self._word2index = word_indexes
 
     # Get word index
     def get_word_index(self, word_text):
@@ -190,8 +185,10 @@ class OneHotConverter(Converter):
         :param word_text:
         :return:
         """
-        return self._word_index[word_text]
+        # Transform
+        word_text = self._transform_word(word_text)
 
+        return self._word2index[word_text]
     # end get_word_index
 
     # Get word indexes
@@ -200,23 +197,8 @@ class OneHotConverter(Converter):
         Get word indexes
         :return:
         """
-        return self._word_index
+        return self._word2index
     # end get_word_indexes
-
-    # Create a new word vector randomly
-    def create_word_vector(self, word):
-        """
-        Create a new word vector randomly
-        :param word: The word
-        """
-        if self._word_pos < self._voc_size:
-            self._voc[word] = self._one_hot()
-            self._word_index[word] = self._word_pos - 1
-            self._index_word[self._word_pos - 1] = word
-        else:
-            raise OneHotVectorFullException("One-hot vector representations are full")
-        # end if
-    # end create_word_vector
 
     # Save Word2Vec
     def save(self, file_name):
@@ -232,6 +214,24 @@ class OneHotConverter(Converter):
     # Override
     ##############################################
 
+    # To unicode
+    def __unicode__(self):
+        """
+        To unicode
+        :return:
+        """
+        return u"OneHotConverter(voc_size={}, max_voc_size={})".format(self._word_pos, self._voc_size)
+    # end __unicode__
+
+    # To string
+    def __str__(self):
+        """
+        To unicode
+        :return:
+        """
+        return "OneHotConverter(voc_size={}, max_voc_size={})".format(self._word_pos, self._voc_size)
+    # end __str__
+
     # Get a word vector
     def __getitem__(self, item):
         """
@@ -242,12 +242,24 @@ class OneHotConverter(Converter):
         # Transform
         item = self._transform_word(item)
 
-        # Create word if needed
-        if item not in self._voc.keys():
-            self.create_word_vector(item)
-        # end if
-
-        return self._voc[item]
+        # Return vector
+        try:
+            word_vector = self._voc_matrix[self._word2index[item], :]
+            self._inc_counters(item)
+            return word_vector
+        except KeyError:
+            # Check
+            if self._word_pos < self._voc_size:
+                self._word2index[item] = self._word_pos
+                self._index2word[self._word_pos] = item
+                word_vector = self._voc_matrix[self._word_pos, :]
+                self._word_pos += 1
+                self._inc_counters(item)
+                return word_vector
+            else:
+                raise OneHotVectorFullException("One-hot vector representations are full")
+            # end if
+        # end try
     # end __getattr__
 
     # Set a word vector
@@ -261,7 +273,7 @@ class OneHotConverter(Converter):
         word = self._transform_word(word)
 
         # Word to vector
-        self._voc[word] = vector
+        self._voc_matrix[self._word2index[word], :] = vector
     # end if
 
     # Convert a string to a ESN input
@@ -320,11 +332,8 @@ class OneHotConverter(Converter):
         :param other:
         :return:
         """
-        for word in self._voc.keys():
-            self._voc[word] *= other
-        # end for
+        self._voc_matrix *= other
         return self
-
     # end __mul__
 
     # Right multiplication
@@ -334,9 +343,7 @@ class OneHotConverter(Converter):
         :param other:
         :return:
         """
-        for word in self._voc.keys():
-            self._voc[word] *= other
-        # end for
+        self._voc_matrix *= other
         return self
     # end __rmul__
 
@@ -347,15 +354,28 @@ class OneHotConverter(Converter):
         :param other:
         :return:
         """
-        for word in self._voc.keys():
-            self._voc[word] *= other
-        # end for
+        self._voc_matrix *= other
         return self
     # end __imul__
 
     ##############################################
     # Private
     ##############################################
+
+    # Increments counters
+    def _inc_counters(self, item):
+        """
+        Increments counters
+        :param item:
+        :return:
+        """
+        try:
+            self._word_counter[item] += 1
+        except KeyError:
+            self._word_counter[item] = 1
+        # end try
+        self._total_counter += 1
+    # end _inc_counters
 
     # Get the number of inputs
     def _get_inputs_size(self):
@@ -391,6 +411,16 @@ class OneHotConverter(Converter):
         # end if
         return word_text
     # end _transform_word
+
+    # Generate voc matrix
+    def _generate_voc_matrix(self):
+        """
+        Generate voc matrix
+        :return:
+        """
+        # Voc matrix
+        return sp.identity(self._voc_size, format='csr')
+    # end _generate_voc_matrix
 
     ##############################################
     # Static
