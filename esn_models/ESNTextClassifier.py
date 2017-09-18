@@ -111,16 +111,6 @@ class ESNTextClassifier(TextClassifier):
             self._output_dim, self._leak_rate, self._spectral_radius, self._input_sparsity, self._w_sparsity)
     # end name
 
-    # Train
-    def train(self, x, y):
-        """
-        Add a training example
-        :param x: Text file example
-        :param y: Corresponding author
-        """
-        self._examples.append((x, y))
-    # end train
-
     # Show debugging informations
     def debug(self):
         """
@@ -130,9 +120,9 @@ class ESNTextClassifier(TextClassifier):
         plt.xlim([0, len(self._last_y[:, 0])])
         plt.ylim([0.0, 1.0])
         for author in range(self._n_classes):
-            plt.plot(self._last_y[:, author], color=colors[author], label=u"Author {}".format(author))
+            plt.plot(self._last_y[:, author], color=colors[author], label=u"Output {}".format(author))
             plt.plot(np.repeat(np.average(self._last_y[:, author]), len(self._last_y[:, author])), color=colors[author],
-                     label=u"Author {} average".format(author), linestyle=u"dashed")
+                     label=u"Output {} average".format(author), linestyle=u"dashed")
         # end for
         plt.show()
     # end debug
@@ -192,6 +182,16 @@ class ESNTextClassifier(TextClassifier):
     ##############################################
     # Private
     ##############################################
+
+    # Train
+    def _train(self, x, y, verbose=False):
+        """
+        Add a training example
+        :param x: Text file example
+        :param y: Corresponding author
+        """
+        self._examples.append((x, y))
+    # end _train
 
     # Finalize the training phase
     def _finalize_training(self, verbose=False):
@@ -274,6 +274,7 @@ class ESNTextClassifier(TextClassifier):
 
             # Return the max
             max = 0.0
+            max_c = None
             for i in range(self._n_classes):
                 if scores[i] > max:
                     max_c = i
