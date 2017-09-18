@@ -210,6 +210,9 @@ class ESNTextClassifier(TextClassifier):
                 self._logger.debug(u"Training on {}/{}...".format(index, len(self._examples)))
             # end if
             x, y = self._generate_training_data(x, author_index)
+            if verbose:
+                print(self._converter)
+            # end if
             X.append(x)
             Y.append(y)
             self._author_token_count[author_index] += x.shape[0]
