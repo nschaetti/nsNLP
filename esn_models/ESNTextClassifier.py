@@ -32,6 +32,12 @@ from nsNLP.classifiers.TextClassifier import TextClassifier
 import matplotlib.pyplot as plt
 from decimal import *
 import logging
+import pickle
+from converters.PosConverter import PosConverter
+from converters.TagConverter import TagConverter
+from converters.WVConverter import WVConverter
+from converters.FuncWordConverter import FuncWordConverter
+from converters.OneHotConverter import OneHotConverter
 
 
 # ESN classifier model
@@ -336,5 +342,53 @@ class ESNTextClassifier(TextClassifier):
     ##############################################
     # Static
     ##############################################
+
+    # Create ESN
+    @staticmethod
+    def create(classes, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
+               rc_w_sparsity,
+               converter, voc_size=10000, pca_model=None, in_components=-1, uppercase=False):
+        """
+        Constructor
+        :param classes: Possible classes
+        :param rc_size: Reservoir's size
+        :param rc_spectral_radius: Reservoir's spectral radius
+        :param rc_leak_rate: Reservoir's leak rate
+        :param rc_input_scaling: Reservoir's input scaling
+        :param rc_input_sparsity: Reservoir's input sparsity
+        :param rc_w_sparsity: Reservoir's sparsity
+        :param converter: Input converter
+        :param pca_model: PCA model to reduce input
+        :param in_components:
+        :return:
+        """
+        # PCA model
+        if pca_model is not None:
+            pca_model = pickle.load(open(pca_model, 'r'))
+        # end if
+
+        # Choose a text to symbol converter.
+        if converter == "pos":
+            converter = PosConverter(resize=in_components, pca_model=pca_model)
+        elif converter == "tag":
+            converter = TagConverter(resize=in_components, pca_model=pca_model)
+        elif converter == "fw":
+            converter = FuncWordConverter(resize=in_components, pca_model=pca_model)
+        elif converter == "wv":
+            converter = WVConverter(resize=in_components, pca_model=pca_model)
+        elif converter == "oh":
+            converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
+        # end if
+
+        # Create the ESN Text Classifier
+        classifier = ESNTextClassifier(classes=classes, size=rc_size,
+                                       input_scaling=rc_input_scaling,
+                                       leak_rate=rc_leak_rate,
+                                       input_sparsity=rc_input_sparsity, converter=converter,
+                                       spectral_radius=rc_spectral_radius,
+                                       w_sparsity=rc_w_sparsity)
+
+        return classifier
+    # end create_esn
 
 # end ESNTextClassifier
