@@ -165,7 +165,7 @@ class ESNTextClassifier(TextClassifier):
         To string
         :return:
         """
-        return "EchoWordClassifier(n_classes={}, size={}, spectral_radius={}, leaky_rate={}, mem_size={}o)".format(
+        return "ESNTextClassifier(n_classes={}, size={}, spectral_radius={}, leaky_rate={}, mem_size={}o)".format(
             self._n_classes, self._output_dim, self._spectral_radius, self._leak_rate, getsizeof(self))
     # end __str__
 
@@ -175,7 +175,7 @@ class ESNTextClassifier(TextClassifier):
         To string
         :return:
         """
-        return u"EchoWordClassifier(n_classes={}, size={}, spectral_radius={}, leaky_rate={}, mem_size={}o)".format(
+        return u"ESNTextClassifier(n_classes={}, size={}, spectral_radius={}, leaky_rate={}, mem_size={}o)".format(
             self._n_classes, self._output_dim, self._spectral_radius, self._leak_rate, getsizeof(self))
     # end __unicode__
 
