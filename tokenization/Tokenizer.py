@@ -32,12 +32,13 @@ class Tokenizer(object):
     """
 
     # Constructor
-    def __init__(self, lang='en'):
+    def __init__(self, lang='en', original=False):
         """
         Constructor
         """
         # Properties
         self._lang = lang
+        self._original = original
     # end __init__
 
     ###########################################
