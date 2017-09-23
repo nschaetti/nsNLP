@@ -34,11 +34,11 @@ class SpacyTokenizer(Tokenizer):
     """
 
     # Constructor
-    def __init__(self, lang='en'):
+    def __init__(self, lang='en', original=False):
         """
         Constructor
         """
-        super(SpacyTokenizer, self).__init__(lang)
+        super(SpacyTokenizer, self).__init__(lang, original)
         # Properties
         self._nlp = spacy.load(lang)
     # end __init__
@@ -48,13 +48,13 @@ class SpacyTokenizer(Tokenizer):
     ###########################################
 
     # Transform text to tokens
-    def __call__(self, text, spacy_tokens=False):
+    def __call__(self, text):
         """
         Transform text to tokens
         :param text:
         :return:
         """
-        if spacy_tokens:
+        if self._original:
             return self._nlp(text)
         else:
             # Tokens
