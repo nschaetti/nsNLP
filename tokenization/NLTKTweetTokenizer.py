@@ -38,7 +38,7 @@ class NLTKTweetTokenizer(Tokenizer):
         """
         Constructor
         """
-        super(NLTKTweetTokenizer, self).__init__(lang)
+        super(NLTKTweetTokenizer, self).__init__(lang, original=False)
         self._tknzr = TweetTokenizer()
     # end __init__
 
