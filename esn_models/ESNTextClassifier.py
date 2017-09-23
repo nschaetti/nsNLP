@@ -213,7 +213,7 @@ class ESNTextClassifier(TextClassifier):
         for index, (x, y) in enumerate(self._examples):
             author_index = self._class_to_int(y)
             if verbose:
-                self._logger.debug(u"Training on {}/{}...".format(index, len(self._examples)))
+                print(u"Training on {}/{}...".format(index, len(self._examples)))
             # end if
             x, y = self._generate_training_data(x, author_index)
             if verbose:
@@ -229,8 +229,8 @@ class ESNTextClassifier(TextClassifier):
 
         # Pre-log
         if verbose:
-            self._logger.debug(u"Training model...")
-            self._logger.debug(datetime.now().strftime("%H:%M:%S"))
+            print(u"Training model...")
+            print(datetime.now().strftime("%H:%M:%S"))
         # end if
 
         # Train the model
@@ -238,7 +238,7 @@ class ESNTextClassifier(TextClassifier):
 
         # Post-log
         if verbose:
-            self._logger.debug(datetime.now().strftime("%H:%M:%S"))
+            print(datetime.now().strftime("%H:%M:%S"))
         # end if
     # end _finalize_training
 
@@ -262,7 +262,7 @@ class ESNTextClassifier(TextClassifier):
 
         # Get maximum probability class
         if self._aggregation == 'average':
-            return np.argmax(np.average(y, 0)), np.average(y, 0)
+            return self._int_to_class(np.argmax(np.average(y, 0))), np.average(y, 0)
         else:
             # Decimal score
             scores = list()
@@ -286,7 +286,7 @@ class ESNTextClassifier(TextClassifier):
             max_c = None
             for i in range(self._n_classes):
                 if scores[i] > max:
-                    max_c = i
+                    max_c = self._int_to_class(i)
                     max = scores[i]
                 # end if
             # end for
@@ -308,7 +308,7 @@ class ESNTextClassifier(TextClassifier):
         self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
 
         # Examples
-        self._examples = dict()
+        self._examples = list()
     # end _reset_model
 
     # Generate training data from text
@@ -343,11 +343,26 @@ class ESNTextClassifier(TextClassifier):
     # Static
     ##############################################
 
+    # Generate W matrix
+    @staticmethod
+    def w(rc_size, rc_w_sparsity):
+        """
+        Generate W matrix
+        :param rc_size:
+        :param rc_w_sparsity:
+        :return:
+        """
+        # W matrix
+        w = mdp.numx.random.choice([0.0, 1.0], (rc_size, rc_size), p=[1.0 - rc_w_sparsity, rc_w_sparsity])
+        w[w == 1] = mdp.numx.random.rand(len(w[w == 1]))
+        return w
+    # end w
+
     # Create ESN
     @staticmethod
     def create(classes, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
-               rc_w_sparsity,
-               converter, voc_size=10000, pca_model=None, in_components=-1, uppercase=False):
+               rc_w_sparsity, converter_desc, w=None, voc_size=10000, pca_model=None, uppercase=False,
+               use_sparse_matrix=False):
         """
         Constructor
         :param classes: Possible classes
@@ -357,9 +372,11 @@ class ESNTextClassifier(TextClassifier):
         :param rc_input_scaling: Reservoir's input scaling
         :param rc_input_sparsity: Reservoir's input sparsity
         :param rc_w_sparsity: Reservoir's sparsity
-        :param converter: Input converter
+        :param converter_desc: Input converter
+        :param w:
         :param pca_model: PCA model to reduce input
         :param in_components:
+        :param use_sparse_matrix:
         :return:
         """
         # PCA model
@@ -368,25 +385,32 @@ class ESNTextClassifier(TextClassifier):
         # end if
 
         # Choose a text to symbol converter.
-        if converter == "pos":
-            converter = PosConverter(resize=in_components, pca_model=pca_model)
-        elif converter == "tag":
-            converter = TagConverter(resize=in_components, pca_model=pca_model)
-        elif converter == "fw":
-            converter = FuncWordConverter(resize=in_components, pca_model=pca_model)
-        elif converter == "wv":
-            converter = WVConverter(resize=in_components, pca_model=pca_model)
-        elif converter == "oh":
+        if converter_desc == "pos":
+            converter = PosConverter(pca_model=pca_model)
+        elif converter_desc == "tag":
+            converter = TagConverter(pca_model=pca_model)
+        elif converter_desc == "fw":
+            converter = FuncWordConverter(pca_model=pca_model)
+        elif converter_desc == "wv":
+            converter = WVConverter(pca_model=pca_model)
+        else:
             converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
         # end if
 
         # Create the ESN Text Classifier
-        classifier = ESNTextClassifier(classes=classes, size=rc_size,
-                                       input_scaling=rc_input_scaling,
-                                       leak_rate=rc_leak_rate,
-                                       input_sparsity=rc_input_sparsity, converter=converter,
-                                       spectral_radius=rc_spectral_radius,
-                                       w_sparsity=rc_w_sparsity)
+        classifier = ESNTextClassifier\
+        (
+            classes=classes,
+            size=rc_size,
+            input_scaling=rc_input_scaling,
+            leak_rate=rc_leak_rate,
+            input_sparsity=rc_input_sparsity,
+            converter=converter,
+            spectral_radius=rc_spectral_radius,
+            w_sparsity=rc_w_sparsity,
+            use_sparse_matrix=use_sparse_matrix,
+            w=w
+        )
 
         return classifier
     # end create_esn
