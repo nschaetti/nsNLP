@@ -39,7 +39,7 @@ class NLTKTokenizer(Tokenizer):
         """
         Constructor
         """
-        super(NLTKTokenizer, self).__init__(lang)
+        super(NLTKTokenizer, self).__init__(lang, original=False)
     # end __init__
 
     ###########################################
