@@ -109,7 +109,7 @@ class FuncWordConverter(Converter):
         init = False
         for index, word in enumerate(tokens):
             if word not in word_exclude:
-                sym = self.tag_to_symbol(word.text)
+                sym = self.tag_to_symbol(word)
                 if sym is None and self._fill_in:
                     sym = null_symbol
                 # end if
