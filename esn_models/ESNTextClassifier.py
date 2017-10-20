@@ -107,6 +107,15 @@ class ESNTextClassifier(TextClassifier):
     # Public
     ##############################################
 
+    # Get w matrix
+    def get_w(self):
+        """
+        Get w matrix
+        :return:
+        """
+        return self._reservoir.w
+    # end get_w
+
     # Get name
     def name(self):
         """
