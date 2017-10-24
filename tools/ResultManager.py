@@ -253,6 +253,17 @@ class ResultManager(object):
         # end if
     # end add_object
 
+    # Write log
+    def write(self, text, log_level):
+        """
+        Write log
+        :param text:
+        :param log_level:
+        :return:
+        """
+        self._write_log(text, log_level)
+    # end write
+
     ###########################################
     # Private
     ###########################################
