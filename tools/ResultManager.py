@@ -32,6 +32,7 @@ from sklearn.utils.extmath import cartesian
 import csv
 import scipy
 import sys
+import LatexPlots
 
 
 # Manage and save results
@@ -694,6 +695,7 @@ class ResultManager(object):
         :param y_label:
         :return:
         """
+        # Save figure
         plt.figure()
         plt.errorbar(x, y, yerr=data_std)
         plt.title(title)
@@ -701,7 +703,43 @@ class ResultManager(object):
         plt.ylabel(ylabel)
         plt.savefig(filename)
         plt.close()
+
+        # Save Latex plot
+        self._save_plot_latex(filename + u".tex", x, y, title, xlabel, ylabel)
     # end _save_plot
+
+    # Save plot as Latex file
+    def _save_plot_latex(self, filename, x, y, yerr, title, xlabel=u"", ylabel=u""):
+        """
+        Save plot as Latex file
+        :param filename:
+        :param data:
+        :param title:
+        :param xlabel:
+        :param ylabel:
+        :return:
+        """
+        # No underscore
+        title = title.replace(u"_", u"-")
+        xlabel = xlabel.replace(u"_", u"-")
+        ylabel = ylabel.replace(u"_", u"-")
+
+        # Latex template
+        latex_template = LatexPlots.latex_start + LatexPlots.latex_plot + LatexPlots.latex_end
+
+        # Latex data
+        latex_data = u""
+
+        # Data
+        for index, x_pos in enumerate(x):
+            latex_data += u"({}, {}) +- (0.{})\n".format(x_pos, y[index], yerr[index])
+        # end for
+
+        # Write
+        with codecs.open(filename, 'w', encoding='utf-8') as f:
+            f.write(latex_template % (title, title, xlabel, ylabel, latex_data, u""))
+        # end with
+    # end _save_histogram_latex
 
     # Save boxplot
     def _save_boxplot(self, filename, data, labels, title, xlabel=u"", ylabel=u""):
@@ -752,13 +790,33 @@ class ResultManager(object):
         :param data:
         :return:
         """
+        # Save figure
         plt.hist(data, normed=True)
         plt.title(title)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.savefig(filename)
         plt.close()
+
+        # Save latex data
+        self._save_histogram_data(filename, data)
     # end _save_histogram
+
+    # Save histogram as data
+    def _save_histogram_data(self, filename, data):
+        """
+        Save histogram as data for latex
+        :param filename:
+        :param data:
+        :return:
+        """
+        with codecs.open(filename + u".csv", 'w', encoding='utf-8') as f:
+            f.write(u"success_rate\n")
+            for d in data:
+                f.write(u"{}\n".format(d))
+            # end for
+        # end with
+    # end _save_histogram_data
 
     # Create CSV file
     def _create_csv_results(self, filename):
