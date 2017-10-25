@@ -195,7 +195,22 @@ class ArgumentBuilder(object):
                 # end if
                 value_type = 'numeric'
             except ValueError:
-                values_str.append(add)
+                # Split by combinaison
+                combs = add.split('*')
+
+                # Combination elements
+                comb_parts = list()
+
+                # For each combinaison elements
+                for comb in combs:
+                    # Split by params
+                    comb_parts.append(comb.split(','))
+                # end for
+
+                # Add to values
+                values_str.append(comb_parts)
+
+                # Value type
                 value_type = 'str'
             # end try
         # end for
