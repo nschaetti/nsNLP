@@ -30,3 +30,4 @@ from .OneHotConverter import OneHotConverter
 from .PosConverter import PosConverter
 from .TagConverter import TagConverter
 from .WVConverter import WVConverter
+from .JoinConverter import JoinConverter
