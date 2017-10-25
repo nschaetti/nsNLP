@@ -33,11 +33,13 @@ import matplotlib.pyplot as plt
 from decimal import *
 import logging
 import pickle
+import os
 from converters.PosConverter import PosConverter
 from converters.TagConverter import TagConverter
 from converters.WVConverter import WVConverter
 from converters.FuncWordConverter import FuncWordConverter
 from converters.OneHotConverter import OneHotConverter
+import converters.JoinConverter
 
 
 # ESN classifier model
@@ -51,7 +53,7 @@ class ESNTextClassifier(TextClassifier):
 
     # Constructor
     def __init__(self, classes, size, leak_rate, input_scaling, w_sparsity, input_sparsity, spectral_radius, converter,
-                 w=None, aggregation='average', use_sparse_matrix=False, smoothing=0.01):
+                 w=None, aggregation='average', use_sparse_matrix=False, smoothing=0.01, state_gram=1):
         """
         Constructor
         :param classes: Set of possible classes
@@ -64,6 +66,7 @@ class ESNTextClassifier(TextClassifier):
         :param converter: Word to input converter
         :param w: Hidden layer matrix
         :param aggregation: Aggregation function (average, multiplication)
+        :param state_gram: Number of state to join
         """
         # Super
         super(ESNTextClassifier, self).__init__(classes=classes)
@@ -82,13 +85,14 @@ class ESNTextClassifier(TextClassifier):
         self._aggregation = aggregation
         self._author_token_count = np.zeros(self._n_classes)
         self._smoothing = smoothing
+        self._state_gram = state_gram
 
         # Create the reservoir
         self._reservoir = Oger.nodes.LeakyReservoirNode(input_dim=self._input_dim, output_dim=self._output_dim,
                                                         input_scaling=input_scaling,
                                                         leak_rate=leak_rate, spectral_radius=spectral_radius,
                                                         sparsity=input_sparsity, w_sparsity=w_sparsity, w=w,
-                                                        use_sparse_matrix=use_sparse_matrix)
+                                                        use_sparse_matrix=use_sparse_matrix, state_gram=state_gram)
 
         # Reset state at each call
         self._reservoir.reset_states = True
@@ -97,7 +101,12 @@ class ESNTextClassifier(TextClassifier):
         self._readout = Oger.nodes.RidgeRegressionNode()
 
         # Flow
-        self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
+        if state_gram == 1:
+            self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
+        else:
+            self._join = Oger.nodes.JoinedStatesNode(input_dim=self._output_dim, joined_size=state_gram)
+            self._flow = mdp.Flow([self._reservoir, self._join, self._readout], verbose=0)
+        # end if
 
         # Logger
         self._logger = logging.getLogger(name=u"RCNLP")
@@ -370,8 +379,8 @@ class ESNTextClassifier(TextClassifier):
     # Create ESN
     @staticmethod
     def create(classes, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
-               rc_w_sparsity, converter_desc, w=None, voc_size=10000, pca_model=None, uppercase=False,
-               use_sparse_matrix=False, aggregation='average'):
+               rc_w_sparsity, converters_desc, w=None, voc_size=10000, uppercase=False,
+               use_sparse_matrix=False, aggregation='average', pca_path=""):
         """
         Constructor
         :param classes: Possible classes
@@ -383,27 +392,49 @@ class ESNTextClassifier(TextClassifier):
         :param rc_w_sparsity: Reservoir's sparsity
         :param converter_desc: Input converter
         :param w:
-        :param pca_model: PCA model to reduce input
-        :param in_components:
         :param use_sparse_matrix:
+        :param pca_path:
         :return:
         """
-        # PCA model
-        if pca_model is not None:
-            pca_model = pickle.load(open(pca_model, 'r'))
-        # end if
+        # Converter list
+        converter_list = list()
 
-        # Choose a text to symbol converter.
-        if converter_desc == "pos":
-            converter = PosConverter(pca_model=pca_model)
-        elif converter_desc == "tag":
-            converter = TagConverter(pca_model=pca_model)
-        elif converter_desc == "fw":
-            converter = FuncWordConverter(pca_model=pca_model)
-        elif converter_desc == "wv":
-            converter = WVConverter(pca_model=pca_model)
+        # For each converter
+        for converter_desc in converters_desc:
+            # Converter's info
+            converter_type = converters_desc[0]
+            converter_size = -1 if len(converter_desc) == 1 else converter_desc[1]
+
+            # PCA model
+            if converter_size != -1:
+                pca_model = pickle.load(
+                    open(os.path.join(pca_path, converter_type + unicode(converter_size) + u".p"), 'r'))
+            else:
+                pca_model = None
+            # end if
+
+            # Choose a text to symbol converter.
+            if converter_desc == "pos":
+                converter = PosConverter(pca_model=pca_model)
+            elif converter_desc == "tag":
+                converter = TagConverter(pca_model=pca_model)
+            elif converter_desc == "fw":
+                converter = FuncWordConverter(pca_model=pca_model)
+            elif converter_desc == "wv":
+                converter = WVConverter(pca_model=pca_model)
+            else:
+                converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
+            # end if
+
+            # Add to list
+            converter_list.append(converter)
+        # end for
+
+        # Join converters if necessary
+        if len(converter_list) == 2:
+            converter = converters.JoinConverter(converter_list[0], converter_list[1])
         else:
-            converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
+            converter = converter_list[0]
         # end if
 
         # Create the ESN Text Classifier
