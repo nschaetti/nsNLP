@@ -371,7 +371,7 @@ class ESNTextClassifier(TextClassifier):
     @staticmethod
     def create(classes, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
                rc_w_sparsity, converter_desc, w=None, voc_size=10000, pca_model=None, uppercase=False,
-               use_sparse_matrix=False):
+               use_sparse_matrix=False, aggregation='average'):
         """
         Constructor
         :param classes: Possible classes
@@ -418,7 +418,8 @@ class ESNTextClassifier(TextClassifier):
             spectral_radius=rc_spectral_radius,
             w_sparsity=rc_w_sparsity,
             use_sparse_matrix=use_sparse_matrix,
-            w=w
+            w=w,
+            aggregation=aggregation
         )
 
         return classifier
