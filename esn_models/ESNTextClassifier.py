@@ -80,7 +80,6 @@ class ESNTextClassifier(TextClassifier):
         self._input_sparsity = input_sparsity
         self._spectral_radius = spectral_radius
         self._converter = converter
-        self._examples = list()
         self._last_y = []
         self._aggregation = aggregation
         self._author_token_count = np.zeros(self._n_classes)
@@ -92,21 +91,18 @@ class ESNTextClassifier(TextClassifier):
                                                         input_scaling=input_scaling,
                                                         leak_rate=leak_rate, spectral_radius=spectral_radius,
                                                         sparsity=input_sparsity, w_sparsity=w_sparsity, w=w,
-                                                        use_sparse_matrix=use_sparse_matrix, state_gram=state_gram)
+                                                        use_sparse_matrix=use_sparse_matrix)
+
+        # Components
+        self._readout = None
+        self._join = None
+        self._flow = None
 
         # Reset state at each call
         self._reservoir.reset_states = True
 
-        # Ridge Regression
-        self._readout = Oger.nodes.RidgeRegressionNode()
-
-        # Flow
-        if state_gram == 1:
-            self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
-        else:
-            self._join = Oger.nodes.JoinedStatesNode(input_dim=self._output_dim, joined_size=state_gram)
-            self._flow = mdp.Flow([self._reservoir, self._join, self._readout], verbose=0)
-        # end if
+        # Init components
+        self._reset_model()
 
         # Logger
         self._logger = logging.getLogger(name=u"RCNLP")
@@ -243,7 +239,17 @@ class ESNTextClassifier(TextClassifier):
         # end for
 
         # Create data
-        data = [None, zip(X, Y)]
+        if self._state_gram == 1:
+            data = [None, zip(X, Y)]
+        else:
+            # Compute the states
+            joined_states = list()
+            for x in X:
+                tmp_states = self._reservoir.execute(x)
+                joined_states.append(self._join.execute(tmp_states))
+            # end for
+            data = [zip(joined_states, Y)]
+        # end if
 
         # Pre-log
         if verbose:
@@ -271,7 +277,15 @@ class ESNTextClassifier(TextClassifier):
         x = self._generate_test_data(text)
 
         # Get reservoir response
-        y = self._flow(x)
+        if self._state_gram == 1:
+            y = self._flow(x)
+        else:
+            # Get states
+            test_states = self._join.execute(self._reservoir(x))
+            y = self._flow(test_states)
+        # end if
+
+        # Normalized
         y -= np.min(y)
         y /= np.max(y)
 
@@ -317,13 +331,24 @@ class ESNTextClassifier(TextClassifier):
         """
         Reset model learned parameters
         """
+        # Delete old
         del self._readout, self._flow
+
+        # Delete joiner if needed
+        if self._state_gram > 1:
+            del self._join
+        # end if
 
         # Ridge Regression
         self._readout = Oger.nodes.RidgeRegressionNode()
 
         # Flow
-        self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
+        if self._state_gram == 1:
+            self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
+        else:
+            self._join = Oger.nodes.JoinedStatesNode(input_dim=self._output_dim, joined_size=self._state_gram)
+            self._flow = mdp.Flow([self._readout], verbose=0)
+        # end if
 
         # Examples
         self._examples = list()
@@ -380,7 +405,7 @@ class ESNTextClassifier(TextClassifier):
     @staticmethod
     def create(classes, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
                rc_w_sparsity, converters_desc, w=None, voc_size=10000, uppercase=False,
-               use_sparse_matrix=False, aggregation='average', pca_path=""):
+               use_sparse_matrix=False, aggregation='average', pca_path="", state_gram=1):
         """
         Constructor
         :param classes: Possible classes
@@ -399,10 +424,13 @@ class ESNTextClassifier(TextClassifier):
         # Converter list
         converter_list = list()
 
+        # Joined converters
+        joined_converters = True if len(converters_desc) > 1 else False
+
         # For each converter
         for converter_desc in converters_desc:
             # Converter's info
-            converter_type = converters_desc[0]
+            converter_type = converter_desc[0]
             converter_size = -1 if len(converter_desc) == 1 else converter_desc[1]
 
             # PCA model
@@ -414,16 +442,18 @@ class ESNTextClassifier(TextClassifier):
             # end if
 
             # Choose a text to symbol converter.
-            if converter_desc == "pos":
-                converter = PosConverter(pca_model=pca_model)
-            elif converter_desc == "tag":
-                converter = TagConverter(pca_model=pca_model)
-            elif converter_desc == "fw":
-                converter = FuncWordConverter(pca_model=pca_model)
-            elif converter_desc == "wv":
-                converter = WVConverter(pca_model=pca_model)
-            else:
+            if converter_type == "pos":
+                converter = PosConverter(pca_model=pca_model, fill_in=joined_converters)
+            elif converter_type == "tag":
+                converter = TagConverter(pca_model=pca_model, fill_in=joined_converters)
+            elif converter_type == "fw":
+                converter = FuncWordConverter(pca_model=pca_model, fill_in=joined_converters)
+            elif converter_type == "wv":
+                converter = WVConverter(pca_model=pca_model, fill_in=joined_converters)
+            elif converter_type == "oh":
                 converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
+            else:
+                raise Exception(u"Unknown converter type {}".format(converter_desc))
             # end if
 
             # Add to list
@@ -450,7 +480,8 @@ class ESNTextClassifier(TextClassifier):
             w_sparsity=rc_w_sparsity,
             use_sparse_matrix=use_sparse_matrix,
             w=w,
-            aggregation=aggregation
+            aggregation=aggregation,
+            state_gram=state_gram
         )
 
         return classifier
