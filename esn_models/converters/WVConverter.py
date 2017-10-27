@@ -33,7 +33,7 @@ class WVConverter(Converter):
     """
 
     # Constructor
-    def __init__(self, tag_to_symbol=None, resize=-1, pca_model=None, upper_level=None):
+    def __init__(self, tag_to_symbol=None, resize=-1, pca_model=None, upper_level=None, fill_in=False):
         """
         Constructor
         :param word2vec:
@@ -43,6 +43,7 @@ class WVConverter(Converter):
         :param upper_level:
         """
         super(WVConverter, self).__init__(tag_to_symbol, resize, pca_model, upper_level)
+        self._fill_in = fill_in
     # end __init__
 
     ##############################################
@@ -75,9 +76,9 @@ class WVConverter(Converter):
                 word_text = word.text.replace(u"\n", u"")
                 word_text = word_text.replace(u"\t", u"")
                 word_text = word_text.replace(u"\r", u"")
-                if len(word_text) > 0:
+                if len(word_text) > 0 or self._fill_in:
                     word_vector = word.vector
-                    if np.average(word_vector) != 0:
+                    if np.average(word_vector) != 0 or self._fill_in:
                         if not ok:
                             doc_array = word_vector
                             ok = True
