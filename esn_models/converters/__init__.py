@@ -27,6 +27,7 @@ from .Converter import Converter
 from .FuncWordConverter import FuncWordConverter
 from .LetterConverter import LetterConverter
 from .OneHotConverter import OneHotConverter
+from .OneHotConverter import OneHotVectorFullException
 from .PosConverter import PosConverter
 from .TagConverter import TagConverter
 from .WVConverter import WVConverter

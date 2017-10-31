@@ -77,6 +77,20 @@ class OneHotConverter(Converter):
     # end __init__
 
     ##############################################
+    # Properties
+    ##############################################
+
+    # Vocabulary size
+    @property
+    def voc_size(self):
+        """
+        Vocabulary size
+        :return:
+        """
+        return len(self._word2index.keys())
+    # end voc_size
+
+    ##############################################
     # Public
     ##############################################
 
