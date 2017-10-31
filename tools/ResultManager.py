@@ -67,7 +67,11 @@ class ResultManager(object):
             self._param2dim[param] = index
             self._value2pos[param] = dict()
             for index2, value in enumerate(params_dict[param]):
-                self._value2pos[param][value] = index2
+                if type(value) == list:
+                    self._value2pos[param][u"{}".format(value)] = index2
+                else:
+                    self._value2pos[param][value] = index2
+                # end if
             # end for
         # end for
 
@@ -164,7 +168,11 @@ class ResultManager(object):
             dim = self._param2dim[param]
 
             # Pos of value
-            pos = self._value2pos[param][self._pos[param]]
+            if type(self._pos[param]) is list:
+                pos = self._value2pos[param][u"{}".format(self._pos[param])]
+            else:
+                pos = self._value2pos[param][self._pos[param]]
+            # end if
 
             # Set
             element_pos[dim] = pos
@@ -455,8 +463,12 @@ class ResultManager(object):
             for param in self._params_dict.keys():
                 if index == self._param2dim[param]:
                     for param_value in self._params_dict[param]:
-                        if pos == self._value2pos[param][param_value]:
-                            max_pos[param] = param_value
+                        the_param_value = param_value
+                        if type(the_param_value) is list:
+                            the_param_value = u"{}".format(the_param_value)
+                        # end if
+                        if pos == self._value2pos[param][the_param_value]:
+                            max_pos[param] = the_param_value
                         # end if
                     # end for
                 # end if
@@ -519,11 +531,21 @@ class ResultManager(object):
         # All samples
         all_samples = np.array([])
 
+        # List?
+        value_list = False
+
         # Sample per values
         for index, value in enumerate(values):
             # Value type
-            if type(value) == str or type(value) == unicode:
+            if type(value) == str or type(value) == unicode or type(value) is list:
                 value_type = 'str'
+            # end if
+
+            # List
+            the_value = value
+            if type(the_value) is list:
+                value_list = True
+                the_value = u"{}".format(the_value)
             # end if
 
             # All range
@@ -535,7 +557,11 @@ class ResultManager(object):
             # end if
 
             # Value position
-            value_pos = self._value2pos[param][value]
+            if type(the_value) is list:
+                value_pos = self._value2pos[param][u"{}".format(the_value)]
+            else:
+                value_pos = self._value2pos[param][the_value]
+            # end if
 
             # Set index
             position_vector[dim] = value_pos
@@ -547,21 +573,21 @@ class ResultManager(object):
             samples_results = np.average(samples, axis=-1).flatten()
 
             # Save histogram for this value
-            self._save_histogram(os.path.join(param_path, u"hist_" + unicode(value) + u".png"), samples_results,
-                                 u"Histogram " + unicode(value), u"Result", u"%")
+            self._save_histogram(os.path.join(param_path, u"hist_" + unicode(the_value) + u".png"), samples_results,
+                                 u"Histogram " + unicode(the_value), u"Result", u"%")
 
             # Add to dict
-            value_samples[value] = np.ascontiguousarray(samples)
-            value_samples[value].shape = (-1, self._k)
-            value2sample[value] = samples_results
+            value_samples[the_value] = np.ascontiguousarray(samples)
+            value_samples[the_value].shape = (-1, self._k)
+            value2sample[the_value] = samples_results
 
             # Add to plot
             plot_results = np.append(plot_results, np.average(samples_results))
             plot_std = np.append(plot_std, np.std(samples_results))
 
             # Value to perf
-            value2perf[value] = np.average(samples_results)
-            value2std[value] = np.std(samples_results)
+            value2perf[the_value] = np.average(samples_results)
+            value2std[the_value] = np.std(samples_results)
 
             # Write best perf in the report
             max_result, max_std, max_params = self._get_max_parameters(samples=True, select_dim=dim, select_value=value_pos)
@@ -579,7 +605,7 @@ class ResultManager(object):
                 for sub_param in self._params_dict.keys():
                     if param != sub_param and len(self._params_dict[sub_param]) > 1:
                         # Path
-                        sub_param_path = os.path.join(param_path, unicode(value))
+                        sub_param_path = os.path.join(param_path, unicode(the_value))
 
                         # Create directory
                         if not os.path.exists(sub_param_path):
@@ -588,7 +614,7 @@ class ResultManager(object):
 
                         # Recursive call!
                         self._save_param_data(sub_param, sub_dir=sub_param_path, pos_dim=self._param2dim[param],
-                                              pos_value=self._value2pos[param][value])
+                                              pos_value=self._value2pos[param][the_value])
                     # end if
                 # end for
             # end if
@@ -599,11 +625,24 @@ class ResultManager(object):
             self._save_plot(os.path.join(param_path, u"plot.png"), values, plot_results, plot_std,
                             u"Results vs {}".format(param), param, u"Results")
         else:
+            # Create data values
             samples_per_values = np.zeros((all_samples.shape[1], all_samples.shape[0]))
             for i in np.arange(0, all_samples.shape[1]):
                 samples_per_values[i, :] = all_samples[:, i].flatten()
             # end for
-            self._save_boxplot(os.path.join(param_path, u"plot.png"), samples_per_values, values,
+
+            # If values are list
+            value_labels = values
+            if value_list:
+                labels = list()
+                for label_entry in values:
+                    labels.append(u"{}".format(label_entry))
+                # end for
+                value_labels = labels
+            # end if
+
+            # Boxplot
+            self._save_boxplot(os.path.join(param_path, u"plot.png"), samples_per_values, value_labels,
                                u"Results vs {}".format(param), param, u"Results")
         # end if
 
