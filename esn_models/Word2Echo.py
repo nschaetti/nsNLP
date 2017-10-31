@@ -5,7 +5,8 @@ import spacy
 import Oger
 import mdp
 import spacy
-from .WordPredictionDataset import WordPredictionDataset
+from converters.OneHotConverter import OneHotConverter
+from embeddings.Embeddings import Embeddings
 
 ###########################################################
 # Class
@@ -50,6 +51,9 @@ class Word2Echo(object):
         self._state_gram = state_gram
         self._direction = direction
 
+        # Counters
+        self._token_count = 0
+
         # Input reservoir dimension
         self._input_dim = converter.get_n_inputs()
 
@@ -82,6 +86,26 @@ class Word2Echo(object):
     # end __init__
 
     ###############################################
+    # Properties
+    ###############################################
+
+    # Total tokens in the dataset
+    @property
+    def token_count(self):
+        """
+        Total tokens in the dataset
+        :return:
+        """
+        return self._token_count
+    # end token_count
+
+    # Vocabulary size of the model
+    @property
+    def voc_size(self):
+        return len(self._converter.voc_size)
+    # end voc_size
+
+    ###############################################
     # Public
     ###############################################
 
@@ -90,7 +114,26 @@ class Word2Echo(object):
         """
         Export word embeddings
         """
-        pass
+        if self._trained:
+            # New embeddings
+            embeddings = Embeddings()
+
+            # Add each word with vectors and count
+            for word in self._converter.words():
+                # Word index
+                word_index = self._converter.get_word_index(word)
+
+                # Get vector in Wout
+                word_vector = self._readout.beta[word_index, :]
+
+                # Add
+                embeddings.add(word, word_vector)
+            # end for
+
+            return embeddings
+        else:
+            return None
+        # end if
     # end export_embeddings
 
     # Import word embeddings
@@ -104,12 +147,12 @@ class Word2Echo(object):
     # end import_embeddings
 
     # Add an example
-    def train(self, x):
+    def add(self, x):
         """
         Add text example
         :param x: List of vector representations
         """
-        self._examples.append(x)
+        self._examples.append(self._converter(x))
     # end add
 
     # Extract embeddings
@@ -168,11 +211,11 @@ class Word2Echo(object):
     # end train
 
     # Get word embeddings
-    def get_word_embeddings(self):
-        """
+    """def get_word_embeddings(self):
+        ""
         Get word embeddings
         :return:
-        """
+        ""
         if self._trained:
             if self._n_word_embeddings == 1:
                 return self._readout.beta
@@ -190,7 +233,7 @@ class Word2Echo(object):
         else:
             raise ReservoirNotTrainedException(u"Reservoir not trained!")
         # end if
-    # end get_word_embeddings
+    # end get_word_embeddings"""
 
     # Reset learning but keep reservoir
     def reset_model(self):
@@ -227,4 +270,45 @@ class Word2Echo(object):
         return 1, 2
     # end _generate_outputs
 
-# end EchoWordPrediction
+    ###############################################
+    # Static
+    ###############################################
+
+    # Create a Word2Echo model
+    def create(self, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
+               rc_w_sparsity, model_type, direction, w=None, voc_size=10000, uppercase=False):
+        """
+        Create a Word2Echo model
+        :param rc_size:
+        :param rc_spectral_radius:
+        :param rc_leak_rate:
+        :param rc_input_scaling:
+        :param rc_input_sparsity:
+        :param rc_w_sparsity:
+        :param w:
+        :param voc_size:
+        :param uppercase:
+        :return:
+        """
+        # Converter
+        converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
+
+        # Create the Word2Echo
+        word2echo_model = Word2Echo \
+        (
+            size=rc_size,
+            input_scaling=rc_input_scaling,
+            leaky_rate=rc_leak_rate,
+            input_sparsity=rc_input_sparsity,
+            converter=converter,
+            spectral_radius=rc_spectral_radius,
+            w_sparsity=rc_w_sparsity,
+            w=w,
+            model=model_type,
+            direction=direction
+        )
+
+        return word2echo_model
+    # end create
+
+# end Word2Echo
