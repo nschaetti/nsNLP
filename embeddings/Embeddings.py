@@ -45,6 +45,20 @@ class Embeddings(object):
     # end __init__
 
     ############################################
+    # Properties
+    ############################################
+
+    # Vocabulary size
+    @property
+    def voc_size(self):
+        """
+        Vocabulary size
+        :return:
+        """
+        return len(self._word2vec.keys())
+    # end voc_size
+
+    ############################################
     # Public
     ############################################
 
@@ -229,7 +243,11 @@ class Embeddings(object):
         :param item:
         :return:
         """
-        return self._word2vec[word]
+        if word in self._word2vec:
+            return self._word2vec[word]
+        else:
+            return None
+        # end if
     # end __getitem__
 
 # end Embeddings
