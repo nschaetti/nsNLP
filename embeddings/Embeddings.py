@@ -58,6 +58,16 @@ class Embeddings(object):
         return len(self._word2vec.keys())
     # end voc_size
 
+    # List of words
+    @property
+    def voc(self):
+        """
+        List of words
+        :return:
+        """
+        return self._word2vec.keys()
+    # end voc
+
     ############################################
     # Public
     ############################################
@@ -103,6 +113,17 @@ class Embeddings(object):
         # Set properties
         self._properties[word][property] = value
     # end set
+
+    # Get a property about a word
+    def get(self, word, property):
+        """
+        Get a property about a word
+        :param word:
+        :param property:
+        :return:
+        """
+        return self._properties[word][property]
+    # end get
 
     # Remove a word from the correspondences
     def remove(self, word):
@@ -153,7 +174,7 @@ class Embeddings(object):
     # end clean
 
     # Similar words
-    def similar_words(self, vector, count=20, measure_func='cosine'):
+    def similar_words(self, vector, count=-1, measure_func='cosine'):
         """
         Similar words
         :param vector:
@@ -170,7 +191,7 @@ class Embeddings(object):
             # Measure
             if measure_func == 'cosine':
                 reverse = True
-                measure = self._cosine_similarity(vector, word_vector)
+                measure = self._cosine_similarity(vector, word_vector)[0, 0]
             elif measure_func == 'euclidian':
                 reverse = False
                 measure = self._euclidian_distance(vector, word_vector)
@@ -186,7 +207,11 @@ class Embeddings(object):
         word_list.sort(key=lambda tup: tup[1], reverse=reverse)
 
         # Return
-        return word_list[:count]
+        if count > 0:
+            return word_list[:count]
+        else:
+            return word_list
+        # end if
     # end similar_words
 
     ############################################
@@ -201,6 +226,8 @@ class Embeddings(object):
         :param vec2:
         :return:
         """
+        vec1 = vec1.reshape(1, -1)
+        vec2 = vec2.reshape(1, -1)
         return np.linalg.norm(vec1-vec2)
     # end euclidian_distance
 
@@ -211,6 +238,8 @@ class Embeddings(object):
         :param vec2:
         :return:
         """
+        vec1 = vec1.reshape(1, -1)
+        vec2 = vec2.reshape(1, -1)
         return cosine_similarity(vec1, vec2)
     # end
 
