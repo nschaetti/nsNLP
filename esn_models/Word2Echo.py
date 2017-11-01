@@ -5,8 +5,9 @@ import spacy
 import Oger
 import mdp
 import spacy
+import scipy.sparse
 from converters.OneHotConverter import OneHotConverter
-from embeddings.Embeddings import Embeddings
+from nsNLP.embeddings.Embeddings import Embeddings
 
 ###########################################################
 # Class
@@ -51,9 +52,6 @@ class Word2Echo(object):
         self._state_gram = state_gram
         self._direction = direction
 
-        # Counters
-        self._token_count = 0
-
         # Input reservoir dimension
         self._input_dim = converter.get_n_inputs()
 
@@ -80,9 +78,6 @@ class Word2Echo(object):
 
         # Init components
         self.reset_model()
-
-        # Flow
-        self._flow = mdp.Flow([self._reservoir, self._readout], verbose=1)
     # end __init__
 
     ###############################################
@@ -96,13 +91,13 @@ class Word2Echo(object):
         Total tokens in the dataset
         :return:
         """
-        return self._token_count
+        return self._converter.token_count
     # end token_count
 
     # Vocabulary size of the model
     @property
     def voc_size(self):
-        return len(self._converter.voc_size)
+        return self._converter.voc_size
     # end voc_size
 
     ###############################################
@@ -116,7 +111,7 @@ class Word2Echo(object):
         """
         if self._trained:
             # New embeddings
-            embeddings = Embeddings()
+            emb = Embeddings()
 
             # Add each word with vectors and count
             for word in self._converter.words():
@@ -124,13 +119,16 @@ class Word2Echo(object):
                 word_index = self._converter.get_word_index(word)
 
                 # Get vector in Wout
-                word_vector = self._readout.beta[word_index, :]
+                word_vector = self._readout.beta[:, word_index]
 
                 # Add
-                embeddings.add(word, word_vector)
+                emb.add(word, word_vector)
+
+                # Set count
+                emb.set(word, 'count', self._converter.get_word_count(word))
             # end for
 
-            return embeddings
+            return emb
         else:
             return None
         # end if
@@ -179,23 +177,28 @@ class Word2Echo(object):
         if self._direction == 'both' or self._direction == 'lr':
             for x in X:
                 tmp_states = self._reservoir.execute(x)
-                joined_states_lr.append(self._join.execute(tmp_states))
+                joined_states_lr.append(self._join.execute(tmp_states)[:-1, :])
             # end for
         # end if
 
         # Compute the states from right to left
         if self._direction == 'both' or self._direction == 'rl':
             for x in X:
-                tmp_states = self._reservoir.execute(x.reverse())
-                joined_states_rl.append(self._join.execute(tmp_states))
+                reversed_inputs = scipy.sparse.csr_matrix(np.flip(x.toarray(), axis=0))
+                tmp_states = self._reservoir.execute(reversed_inputs)
+                joined_states_rl.append(np.flip(self._join.execute(tmp_states)[:-1, :], axis=0))
             # end for
         # end if
 
         # Merge both direction if needed
         if self._direction == 'both':
             merge_states = list()
-            for index, state_lr in joined_states_lr:
-                merge_states.append(np.hstack((state_lr, joined_states_rl[-2-index])))
+            for index, state_lr in enumerate(joined_states_lr):
+                """print(state_lr.shape)
+                print(state_lr[0:2, :])
+                print(joined_states_rl[index].shape)
+                print(joined_states_rl[index][0:2, :])"""
+                merge_states.append(np.hstack((state_lr, joined_states_rl[index])))
             # end for
         elif self._direction == 'lr':
             merge_states = joined_states_lr[:-1]
@@ -203,8 +206,11 @@ class Word2Echo(object):
             merge_states = joined_states_rl.reverse()[1:]
         # end if
 
+        # Data
+        data = [zip(merge_states, Y)]
+
         # Train the model
-        self._flow.train(zip(merge_states, Y))
+        self._flow.train(data)
 
         # Trained
         self._trained = True
@@ -250,7 +256,8 @@ class Word2Echo(object):
         self._readout = Oger.nodes.RidgeRegressionNode()
 
         # Join
-        self._join = Oger.nodes.JoinedStatesNode(input_dim=self._output_dim, joined_size=self._state_gram)
+        self._join = Oger.nodes.JoinedStatesNode(input_dim=self._output_dim, joined_size=self._state_gram,
+                                                 fill_before=True)
 
         # Flow
         self._flow = mdp.Flow([self._readout], verbose=0)
@@ -275,8 +282,9 @@ class Word2Echo(object):
     ###############################################
 
     # Create a Word2Echo model
-    def create(self, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
-               rc_w_sparsity, model_type, direction, w=None, voc_size=10000, uppercase=False):
+    @staticmethod
+    def create(rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
+               rc_w_sparsity, model_type, direction, w=None, voc_size=10000, uppercase=False, state_gram=1):
         """
         Create a Word2Echo model
         :param rc_size:
@@ -305,7 +313,8 @@ class Word2Echo(object):
             w_sparsity=rc_w_sparsity,
             w=w,
             model=model_type,
-            direction=direction
+            direction=direction,
+            state_gram=state_gram
         )
 
         return word2echo_model
