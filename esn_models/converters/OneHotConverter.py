@@ -80,6 +80,16 @@ class OneHotConverter(Converter):
     # Properties
     ##############################################
 
+    # Total tokens in the dataset
+    @property
+    def token_count(self):
+        """
+        Total tokens in the dataset
+        :return:
+        """
+        return self._total_counter
+    # end token_count
+
     # Vocabulary size
     @property
     def voc_size(self):
