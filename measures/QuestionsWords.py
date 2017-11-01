@@ -54,15 +54,15 @@ class QuestionsWords(object):
     # Public
     ###########################################
 
-    # Test words embeddings with linear positioning
-    def linear_positioning(self, word_embeddings, measure='cosine'):
+    # Test words embeddings with positioning
+    def positioning(self, word_embeddings, measure='cosine', func='linear'):
         """
         Test words embeddings with linear positioning
         :param word_embeddings:
         :return:
         """
         # Linear positions
-        linear_positions = list()
+        positionings = list()
 
         # For each questions-words
         for (word1, word2, word3, response_word) in self._questions_words:
@@ -75,25 +75,36 @@ class QuestionsWords(object):
             # No unknown words
             if vec1 is not None and vec2 is not None and vec3 is not None and observation is not None:
                 # Get nearest word
-                predictions = word_embeddings.similar_words(vec1 - vec2 + vec3, count=word_embeddings.voc_size(),
+                predictions = word_embeddings.similar_words(vec1 - vec2 + vec3, count=word_embeddings.voc_size,
                                                             measure_func=measure)
 
                 # Find the position
                 for index, (pred_word, pred_measure) in enumerate(predictions):
                     if pred_word == response_word:
-                        linear_pos = 1.0 - (float(index) / float(word_embeddings.voc_size()))
-                        linear_positions.append(linear_pos)
+                        word_pos = index + 1
                         break
                     # end if
                 # end for
+
+                # Compute positioning
+                if func == 'linear':
+                    word_positioning = self._linear_positioning(word_pos, word_embeddings.voc_size)
+                elif func == 'inv':
+                    word_positioning = self._inverse_positioning(word_pos, word_embeddings.voc_size)
+                else:
+                    raise Exception(u"Unknown positioning function")
+                # end if
+
+                # Add to total positionings
+                positionings.append(word_positioning)
             # end if
         # end for
 
-        return np.average(linear_positions), linear_positions
+        return np.average(positionings), positionings
     # end linear_positioning
 
     # Test several embeddings and compare with t-test
-    def embeddings_significance(self, embeddings_list, test='linear_positioning', measure='cosine'):
+    def embeddings_significance(self, embeddings_list, measure='cosine', func='linear'):
         """
         Test several embeddings and compare with t-test
         :param embeddings_list:
@@ -112,10 +123,8 @@ class QuestionsWords(object):
             for index2, emb2 in enumerate(embeddings_list):
                 if emb1 != emb2 and emb1.voc_size() == emb2.voc_size():
                     # Test embeddings
-                    if test == 'linear_positioning':
-                        average_pos1, positions1 = self.linear_positioning(emb1, measure=measure)
-                        average_pos2, positions2 = self.linear_positioning(emb2, measure=measure)
-                    # end if
+                    average_pos1, positions1 = self.positioning(emb1, measure=measure, func=func)
+                    average_pos2, positions2 = self.positioning(emb2, measure=measure, func=func)
 
                     # Save positioning
                     positionings[index1] = average_pos1
@@ -135,6 +144,28 @@ class QuestionsWords(object):
     # Private
     ###########################################
 
+    # Linear positioning
+    def _linear_positioning(self, word_pos, voc_size):
+        """
+        Linear positioning
+        :param word_pos:
+        :param voc_size:
+        :return:
+        """
+        return 1.0 - (float(word_pos-1) / float(voc_size))
+    # end _linear_positioning
+
+    # Inverse positioning
+    def _inverse_positioning(self, word_pos, voc_size):
+        """
+        Inverse positioning
+        :param word_pos:
+        :param voc_size:
+        :return:
+        """
+        return 1.0 / word_pos
+    # end _inverse_positioning
+
     # Load the dataset
     def _load(self):
         """
@@ -149,13 +180,15 @@ class QuestionsWords(object):
 
         # For each line
         for line in question_lines:
-            # No comments
-            if line[0] != u':':
-                # Split for each words
-                question_words = line.split(u' ')
+            if len(line) > 0:
+                # No comments
+                if line[0] != u':':
+                    # Split for each words
+                    question_words = line.split(u' ')
 
-                # Add to examples
-                self._questions_words.append(question_words)
+                    # Add to examples
+                    self._questions_words.append(question_words)
+                # end if
             # end if
         # end for
     # end _load
