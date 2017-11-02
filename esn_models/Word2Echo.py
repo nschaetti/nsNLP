@@ -110,8 +110,11 @@ class Word2Echo(object):
         Export word embeddings
         """
         if self._trained:
+            # Compute embeddings size
+            embedding_side_size = 2 if self._direction == 'both' else 1
+
             # New embeddings
-            emb = Embeddings()
+            emb = Embeddings(size=self._output_dim*self._state_gram*embedding_side_size+1)
 
             # Add each word with vectors and count
             for word in self._converter.words():
