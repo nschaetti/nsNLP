@@ -51,6 +51,20 @@ class QuestionsWords(object):
     # end __init__
 
     ###########################################
+    # Properties
+    ###########################################
+
+    # Number of queries
+    @property
+    def size(self):
+        """
+        Number of queries
+        :return:
+        """
+        return len(self._questions_words)
+    # end size
+
+    ###########################################
     # Public
     ###########################################
 
@@ -63,6 +77,9 @@ class QuestionsWords(object):
         """
         # Linear positions
         positionings = list()
+
+        # Counters
+        total = 0.0
 
         # For each questions-words
         for (word1, word2, word3, response_word) in self._questions_words:
@@ -98,9 +115,12 @@ class QuestionsWords(object):
                 # Add to total positionings
                 positionings.append(word_positioning)
             # end if
+
+            # Total
+            total += 1.0
         # end for
 
-        return np.average(positionings), positionings
+        return np.average(positionings), positionings, float(len(positionings)) / total
     # end linear_positioning
 
     # Test several embeddings and compare with t-test
