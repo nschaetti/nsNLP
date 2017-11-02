@@ -42,7 +42,7 @@ class ResultManager(object):
     """
 
     # Constructor
-    def __init__(self, output_dir, name, description, params_dict, n_samples, k=10, verbose=2):
+    def __init__(self, output_dir, name, description, params_dict, n_samples, k=10, verbose=2, nan=False):
         """
         Constructor
         :param params_dict:
@@ -59,6 +59,7 @@ class ResultManager(object):
         self._n_dim = len(params_dict.keys()) + 2
         self._verbose = verbose
         self._objects = list()
+        self._nan = nan
 
         # Param to dimension
         self._param2dim = dict()
@@ -153,7 +154,7 @@ class ResultManager(object):
     # end set_fold_state
 
     # Save result
-    def add_result(self, success_rate):
+    def add_result(self, success_rate, last_fold=False):
         """
         Save result
         :param success_rate:
@@ -193,20 +194,20 @@ class ResultManager(object):
             self._write_log(u"\t\t\t\tSuccess rate {}".format(success_rate), log_level=3)
 
             # Last fold?
-            if self._fold + 1 == self._k:
+            if self._fold + 1 == self._k or last_fold:
                 k_pos = element_pos
                 k_pos[-1] = slice(None)
-                self._write_log(u"\t\t\t{}-fold success rate {}".format(self._k, np.average(self._result_matrix[tuple(k_pos)])), log_level=2)
+                self._write_log(u"\t\t\t{}-fold success rate {}".format(self._k, np.nanmean(self._result_matrix[tuple(k_pos)])), log_level=2)
 
                 # Last sample?
                 if self._sample + 1 == self._n_samples:
                     n_pos = k_pos
                     n_pos[-2] = slice(None)
                     # Folds perfs
-                    folds_perfs = np.average(self._result_matrix[tuple(n_pos)], axis=-1).flatten()
+                    folds_perfs = np.nanmean(self._result_matrix[tuple(n_pos)], axis=-1).flatten()
 
                     # Print
-                    self._write_log(u"\t\t{} samples success rate {} +- {}".format(self._n_samples, np.average(folds_perfs), np.std(folds_perfs)), log_level=1)
+                    self._write_log(u"\t\t{} samples success rate {} +- {}".format(self._n_samples, np.nanmean(folds_perfs), np.nanstd(folds_perfs)), log_level=1)
                     self._write_log(u"\t\tMax sample success rate {}".format(np.max(folds_perfs)), log_level=1)
                 # end if
             # end if
@@ -223,7 +224,7 @@ class ResultManager(object):
         :return:
         """
         # Save overall success rate
-        self._write_log(u"\tOverall success rate: {}".format(np.average(self._result_matrix)), log_level=0)
+        self._write_log(u"\tOverall success rate: {}".format(np.nanmean(self._result_matrix)), log_level=0)
 
         # Save result matrix
         self.save_object(u"result_matrix", self._result_matrix)
@@ -375,7 +376,7 @@ class ResultManager(object):
         :return:
         """
         # Result by samples
-        sample_results = np.average(self._result_matrix, axis=-1)
+        sample_results = np.nanmean(self._result_matrix, axis=-1)
 
         # Save
         self._save_histogram(os.path.join(self._xp_dir, u"overall_results.png"), self._result_matrix.flatten(),
@@ -434,13 +435,13 @@ class ResultManager(object):
             pos_tuple = pos.tolist()
 
             # Get result
-            pos_result = np.average(self._result_matrix[tuple(pos_tuple)])
+            pos_result = np.nanmean(self._result_matrix[tuple(pos_tuple)])
 
             # Max?
             if pos_result > max_result:
                 max_result = pos_result
                 max_pos = pos_tuple
-                max_std = np.std(self._result_matrix[tuple(pos_tuple)])
+                max_std = np.nanstd(self._result_matrix[tuple(pos_tuple)])
             # end if
         # end for
 
@@ -570,7 +571,7 @@ class ResultManager(object):
             samples = self._result_matrix[tuple(position_vector)]
 
             # Samples perfs
-            samples_results = np.average(samples, axis=-1).flatten()
+            samples_results = np.nanmean(samples, axis=-1).flatten()
 
             # Save histogram for this value
             self._save_histogram(os.path.join(param_path, u"hist_" + unicode(the_value) + u".png"), samples_results,
@@ -582,12 +583,12 @@ class ResultManager(object):
             value2sample[the_value] = samples_results
 
             # Add to plot
-            plot_results = np.append(plot_results, np.average(samples_results))
-            plot_std = np.append(plot_std, np.std(samples_results))
+            plot_results = np.append(plot_results, np.nanmean(samples_results))
+            plot_std = np.append(plot_std, np.nanstd(samples_results))
 
             # Value to perf
-            value2perf[the_value] = np.average(samples_results)
-            value2std[the_value] = np.std(samples_results)
+            value2perf[the_value] = np.nanmean(samples_results)
+            value2std[the_value] = np.nanstd(samples_results)
 
             # Write best perf in the report
             max_result, max_std, max_params = self._get_max_parameters(samples=True, select_dim=dim, select_value=value_pos)
@@ -678,8 +679,10 @@ class ResultManager(object):
             t_tests[value1] = dict()
             for value2 in values:
                 if value1 != value2:
-                    t_tests[value1][value2] = scipy.stats.ttest_rel(value2samples[value1].flatten(),
-                                                                    value2samples[value2].flatten()).pvalue
+                    value1_samples = value2samples[value1].flatten()
+                    value2_samples = value2samples[value2].flatten()
+                    t_tests[value1][value2] = scipy.stats.ttest_rel(value1_samples[np.isfinite(value1_samples)],
+                                                                    value2_samples[np.isfinite(value2_samples)]).pvalue
                 else:
                     t_tests[value1][value2] = 0.0
                 # end if
@@ -819,7 +822,13 @@ class ResultManager(object):
         # Add cross validation
         dims.append(self._k)
 
-        return np.zeros(dims)
+        if not self._nan:
+            return np.zeros(dims)
+        else:
+            m = np.zeros(dims)
+            m[:] = np.nan
+            return m
+        # end if
     # end _generate_matrix
 
     # Save histogram
@@ -830,7 +839,7 @@ class ResultManager(object):
         :return:
         """
         # Save figure
-        plt.hist(data, normed=True)
+        plt.hist(data[np.isfinite(data)], normed=True)
         plt.title(title)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
@@ -851,7 +860,7 @@ class ResultManager(object):
         """
         with codecs.open(filename + u".csv", 'w', encoding='utf-8') as f:
             f.write(u"success_rate\n")
-            for d in data:
+            for d in data[np.isfinite(data)]:
                 f.write(u"{}\n".format(d))
             # end for
         # end with
