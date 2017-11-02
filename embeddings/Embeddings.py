@@ -25,6 +25,11 @@
 # Imports
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+import pylab as plt
+import codecs
+import unicodecsv as csv
 
 
 # Transform word to a vector
@@ -34,7 +39,7 @@ class Embeddings(object):
     """
 
     # Constructor
-    def __init__(self):
+    def __init__(self, size):
         """
         Constructor
         :param lang: Language
@@ -42,11 +47,23 @@ class Embeddings(object):
         # Globals
         self._word2vec = dict()
         self._properties = dict()
+        self._size = size
+        self._property_list = list()
     # end __init__
 
     ############################################
     # Properties
     ############################################
+
+    # Embeddings size
+    @property
+    def size(self):
+        """
+        Embeddings size
+        :return:
+        """
+        return self._size
+    # end size
 
     # Vocabulary size
     @property
@@ -71,6 +88,93 @@ class Embeddings(object):
     ############################################
     # Public
     ############################################
+
+    # Save list of words
+    def wordlist(self, csv_file, info=u""):
+        """
+        Save list of words
+        :param csv_file:
+        :param info:
+        :return:
+        """
+        # File
+        with open(csv_file, 'wb') as f:
+            # CSV writer
+            csv_writer = csv.writer(f, )
+
+            # Write header
+            csv_writer.writerow(['word'] + self._property_list)
+
+            # For each words
+            for word in self.voc:
+                word_desc = list()
+                word_desc.append(word)
+                for prop in self._property_list:
+                    try:
+                        word_desc.append(self._properties[word][prop])
+                    except KeyError:
+                        word_desc.append(u"")
+                    # end try
+                # end for
+                csv_writer.writerow(word_desc)
+            # end for
+        # end with
+
+        # Save info
+        if info != u"":
+            with codecs.open(csv_file + u".txt", 'w', encoding='utf-8') as f:
+                f.write(info)
+            # end with
+        # end if
+    # end wordlist
+
+    # Save the image of word vectors reduced
+    def wordnet(self, prop, image, n_words=100, fig_size=5000, reduction='TSNE', info=u""):
+        """
+        Save the image of word vectors reduced
+        :param property:
+        :param image:
+        :param fig_size:
+        :param reduction:
+        :return:
+        """
+        # Word counts
+        word_counts = list()
+
+        # Select words with highest property value
+        for word in self.voc:
+             word_counts.append((word, self.get(word, prop)))
+        # end for
+
+        # Order list by property value
+        word_counts.sort(key=lambda tup: tup[1], reverse=True)
+
+        # Selected words
+        selected_words = [i[0] for i in word_counts[:n_words]]
+
+        # Selected word embeddings
+        selected_word_embeddings = np.zeros((int(self._size), int(n_words)))
+
+        # For each words
+        selected_word_indexes = dict()
+        for index, word in enumerate(selected_words):
+            selected_word_embeddings[:, index] = self[word]
+            selected_word_indexes[word] = index
+        # end for
+
+        # Reduce
+        reduced_matrix = Embeddings.reduction(selected_word_embeddings, reduction)
+
+        # Save figure
+        Embeddings.save_figure(reduced_matrix, selected_word_indexes, image, fig_size)
+
+        # Save info
+        if info != u"":
+            with codecs.open(image + u".txt", 'w', encoding='utf-8') as f:
+                f.write(info)
+            # end with
+        # end if
+    # end words_figure
 
     # Add a correspondence
     def add(self, word, vector):
@@ -105,6 +209,11 @@ class Embeddings(object):
         :param value:
         :return:
         """
+        # Add to list
+        if property not in self._property_list:
+            self._property_list.append(property)
+        # end if
+
         # Add dict
         if word not in self._properties:
             self._properties[word] = dict()
@@ -136,7 +245,7 @@ class Embeddings(object):
     # end remove
 
     # Clean the correspondences based on a property
-    def clean(self, property, value, threshold='min'):
+    def clean(self, property, value, threshold='min', clean_punc=True):
         """
         Clean the correspondences based on a property
         :param property:
@@ -144,8 +253,15 @@ class Embeddings(object):
         :param threshold:
         :return:
         """
+        # Punctuations
+        puncs = [u',', u'.', u';', u':', u'!', u'?', u'(', u')', u'"', u"^", u'\'', u'``', u'...', u'-', u'*', u'\'\'',
+                 u'/', u']', u'[', u'--', u'_']
+
+        # Check each word
         for word in self._properties.keys():
-            if property in self._properties[word].keys():
+            if clean_punc and word in puncs:
+                self.remove(word)
+            elif property in self._properties[word].keys():
                 if threshold == 'min':
                     # MIN
                     if self._properties[word][property] < value:
@@ -243,6 +359,43 @@ class Embeddings(object):
         return cosine_similarity(vec1, vec2)
     # end
 
+    @staticmethod
+    def save_figure(reduced_matrix, selected_word_indexes, image, fig_size=5000):
+        """
+        Save figure of words
+        :return:
+        """
+        # Figure
+        plt.figure(figsize=(fig_size * 0.003, fig_size * 0.003), dpi=300)
+
+        # Average
+        mean_x = np.average(reduced_matrix[:, 0])
+        mean_y = np.average(reduced_matrix[:, 1])
+
+        # Std
+        std_x = np.std(reduced_matrix[:, 0])
+        std_y = np.std(reduced_matrix[:, 1])
+
+        # Limits
+        max_x = np.amax(reduced_matrix, axis=0)[0]
+        max_y = np.amax(reduced_matrix, axis=0)[1]
+        min_x = np.amin(reduced_matrix, axis=0)[0]
+        min_y = np.amin(reduced_matrix, axis=0)[1]
+        plt.xlim((mean_x - std_x, mean_x + std_x))
+        plt.ylim((mean_y - std_y, mean_y + std_y))
+
+        # Plot each words
+        for word_text in selected_word_indexes.keys():
+            word_index = selected_word_indexes[word_text]
+            plt.scatter(reduced_matrix[word_index, 0], reduced_matrix[word_index, 1], 0.5)
+            plt.text(reduced_matrix[word_index, 0], reduced_matrix[word_index, 1], word_text, fontsize=2.5)
+        # end for
+
+        # Save image
+        plt.savefig(image)
+        plt.close()
+    # end save_figure
+
     ############################################
     # Override
     ############################################
@@ -278,5 +431,45 @@ class Embeddings(object):
             return None
         # end if
     # end __getitem__
+
+    ############################################
+    # Static
+    ############################################
+
+    @staticmethod
+    def reduction(word_embeddings, reduction='TSNE'):
+        """
+        Reduction
+        :param word_embeddings:
+        :param reduction:
+        :return:
+        """
+        if reduction == 'TNSE':
+            return Embeddings.reduction_tsne(word_embeddings)
+        else:
+            return Embeddings.reduction_pca(word_embeddings)
+        # end if
+    # end reduction
+
+    @staticmethod
+    def reduction_tsne(word_embeddings):
+        """
+        Reduction with TSNE
+        :return:
+        """
+        model = TSNE(n_components=2, random_state=0)
+        return model.fit_transform(word_embeddings.T)
+    # end reduction_tsne
+
+    @staticmethod
+    def reduction_pca(word_embeddings):
+        """
+        Reduction with PCA
+        :param word_embeddings:
+        :return:
+        """
+        model = PCA(n_components=2, random_state=0)
+        return model.fit_transform(word_embeddings.T)
+    # end reduction_pca
 
 # end Embeddings
