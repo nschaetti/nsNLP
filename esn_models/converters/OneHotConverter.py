@@ -285,7 +285,6 @@ class OneHotConverter(Converter):
                 self._word2index[item] = word_index
                 self._index2word[word_index] = item
                 self._word_pos += 1
-                self._inc_counters(item)
             else:
                 raise OneHotVectorFullException("One-hot vector representations are full")
             # end if
