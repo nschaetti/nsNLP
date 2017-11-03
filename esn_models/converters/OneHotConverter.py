@@ -193,6 +193,15 @@ class OneHotConverter(Converter):
         return self._total_counter
     # end get_total_count
 
+    # Reset total counter
+    def reset_total_counter(self):
+        """
+        Reset total counter
+        :return:
+        """
+        self._total_counter = 0
+    # end reset_total_counter
+
     # Set word indexes
     def set_word_indexes(self, word_indexes):
         """
