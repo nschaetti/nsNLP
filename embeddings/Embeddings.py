@@ -445,9 +445,9 @@ class Embeddings(object):
         :param item:
         :return:
         """
-        if word in self._word2vec:
+        try:
             return self._word2vec[word]
-        else:
+        except KeyError:
             return None
         # end if
     # end __getitem__
