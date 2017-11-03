@@ -22,7 +22,8 @@ class Word2Echo(object):
 
     # Constructor
     def __init__(self, converter, size, leaky_rate, spectral_radius, input_scaling=0.25, input_sparsity=0.1,
-                 w_sparsity=0.1, w_in=None, w=None, model='word2echo', state_gram=1, direction='both'):
+                 w_sparsity=0.1, w_in=None, w=None, model='word2echo', state_gram=1, direction='both',
+                 word_embeddings=None, gamma=1):
         """
         Constructor
         :param converter: Text converter
@@ -35,6 +36,8 @@ class Word2Echo(object):
         :param w:
         :param model: word2echo predict the next word, echo2word predict word from surounding states.
         :param direction: Direction of the prediction
+        :param word_embeddings:
+        :param gamma: Parameter for Echo2Word model
         """
         # Properties
         self._converter = converter
@@ -51,9 +54,15 @@ class Word2Echo(object):
         self._trained = False
         self._state_gram = state_gram
         self._direction = direction
+        self._word_embeddings = word_embeddings
+        self._gamma = gamma
 
         # Input reservoir dimension
-        self._input_dim = converter.get_n_inputs()
+        if self._word_embeddings is None:
+            self._input_dim = converter.get_n_inputs()
+        else:
+            self._input_dim = self._word_embeddings.size
+        # end if
 
         # Set of example
         self._examples = list()
@@ -113,23 +122,57 @@ class Word2Echo(object):
             # Compute embeddings size
             embedding_side_size = 2 if self._direction == 'both' else 1
 
+            # Embedding size
+            if self._model == 'word2echo':
+                emb_size = self._output_dim*self._state_gram*embedding_side_size+1
+            elif self._model == 'echo2word':
+                emb_size = self._output_dim*self._state_gram**embedding_side_size*(self._gamma*embedding_side_size+1)
+            else:
+                raise Exception(u"Unknown model {}".format(self._model))
+            # end if
+
             # New embeddings
-            emb = Embeddings(size=self._output_dim*self._state_gram*embedding_side_size+1)
+            emb = Embeddings(size=emb_size)
 
-            # Add each word with vectors and count
-            for word in self._converter.words():
-                # Word index
-                word_index = self._converter.get_word_index(word)
+            # For Word2Echo
+            if self._model == 'word2echo':
+                # Add each word with vectors and count
+                for word in self._converter.words():
+                    # Word index
+                    word_index = self._converter.get_word_index(word)
 
-                # Get vector in Wout
-                word_vector = self._readout.beta[:, word_index]
+                    # Get vector in Wout
+                    word_vector = self._readout.beta[:, word_index]
 
-                # Add
-                emb.add(word, word_vector)
+                    # Add
+                    emb.add(word, word_vector)
 
-                # Set count
-                emb.set(word, 'count', self._converter.get_word_count(word))
-            # end for
+                    # Set count
+                    emb.set(word, 'count', self._converter.get_word_count(word))
+                # end for
+            elif self._model == 'echo2word':
+                # Add each word with vectors and count
+                for word in self._converter.words():
+                    # Word index
+                    word_index = self._converter.get_word_index(word)
+
+                    # Vector for this word
+                    word_vector = np.zeros(emb_size)
+
+                    # For each position
+                    j = 0
+                    for i in np.arange(word_index, self._readout.beta.shape[1], self._converter.voc_size):
+                        word_vector[j:j+self._readout.beta.shape[0]] = self._readout.beta[:, i]
+                        j += self._readout.beta.shape[0]
+                    # end for
+
+                    # Add to embeddings
+                    emb.add(word, word_vector)
+
+                    # Set count
+                    emb.set(word, 'count', self._converter.get_word_count(word))
+                # end if
+            # end if
 
             return emb
         else:
@@ -153,7 +196,11 @@ class Word2Echo(object):
         Add text example
         :param x: List of vector representations
         """
-        self._examples.append(self._converter(x))
+        if self._word_embeddings is not None:
+            self._examples.append(self._word_embeddings(x))
+        else:
+            self._examples.append(self._converter(x))
+        # end if
     # end add
 
     # Extract embeddings
@@ -161,88 +208,13 @@ class Word2Echo(object):
         """
         Extract embeddings
         """
-        # Input and output
-        X = list()
-        Y = list()
-
-        # For each example
-        for x in self._examples:
-            # Add to data
-            X.append(x)
-            Y.append(x)
-        # end for
-
-        # List of states
-        joined_states_lr = list()
-        joined_states_rl = list()
-
-        # Compute the states from left to right
-        if self._direction == 'both' or self._direction == 'lr':
-            for x in X:
-                tmp_states = self._reservoir.execute(x)
-                joined_states_lr.append(self._join.execute(tmp_states)[:-1, :])
-            # end for
+        # Extract giving the model
+        if self._model == 'word2echo':
+            self._extract_word2echo()
+        elif self._model == 'echo2word':
+            self._extract_echo2word()
         # end if
-
-        # Compute the states from right to left
-        if self._direction == 'both' or self._direction == 'rl':
-            for x in X:
-                reversed_inputs = scipy.sparse.csr_matrix(np.flip(x.toarray(), axis=0))
-                tmp_states = self._reservoir.execute(reversed_inputs)
-                joined_states_rl.append(np.flip(self._join.execute(tmp_states)[:-1, :], axis=0))
-            # end for
-        # end if
-
-        # Merge both direction if needed
-        if self._direction == 'both':
-            merge_states = list()
-            for index, state_lr in enumerate(joined_states_lr):
-                """print(state_lr.shape)
-                print(state_lr[0:2, :])
-                print(joined_states_rl[index].shape)
-                print(joined_states_rl[index][0:2, :])"""
-                merge_states.append(np.hstack((state_lr, joined_states_rl[index])))
-            # end for
-        elif self._direction == 'lr':
-            merge_states = joined_states_lr[:-1]
-        elif self._direction == 'rl':
-            merge_states = joined_states_rl.reverse()[1:]
-        # end if
-
-        # Data
-        data = [zip(merge_states, Y)]
-
-        # Train the model
-        self._flow.train(data)
-
-        # Trained
-        self._trained = True
     # end train
-
-    # Get word embeddings
-    """def get_word_embeddings(self):
-        ""
-        Get word embeddings
-        :return:
-        ""
-        if self._trained:
-            if self._n_word_embeddings == 1:
-                return self._readout.beta
-            else:
-                n_words = self._readout.beta.shape[1]
-                single_dimension = self._readout.beta.shape[0]
-                word_embeddings = np.zeros((single_dimension * self._n_word_embeddings, n_words))
-                # For each word embeddings
-                for word_index in range(n_words):
-                    # For each word embedding
-                    for embedding_index in range(self._n_word_embeddings):
-                        word_embeddings[embedding_index*single_dimension, word_index] = self._readout.beta[:, embedding_index*n_words]
-                # end for
-            # end if
-        else:
-            raise ReservoirNotTrainedException(u"Reservoir not trained!")
-        # end if
-    # end get_word_embeddings"""
 
     # Reset learning but keep reservoir
     def reset_model(self):
@@ -270,6 +242,214 @@ class Word2Echo(object):
     # Private
     ###############################################
 
+    # Get Echo2Word outputs
+    def _echo2word_outputs(self, x):
+        """
+        Get Echo2Word outputs
+        :param x:
+        :return:
+        """
+        # Side outputs size
+        side_size = int(self._output_dim * self._gamma)
+
+        # Output matrix
+        y = scipy.sparse.csr_matrix((x.shape[0], side_size * 2))
+
+        # Zero inputs
+        zero_inputs = scipy.sparse.csr_matrix(side_size)
+
+        # For each token in inputs
+        for i in np.arange(0, x.shape[0]):
+            # Current inputs
+            current_inputs = scipy.sparse.csr_matrix(side_size * 2)
+
+            # Before inputs
+            if i == 0:
+                current_inputs[:side_size] = zero_inputs
+            else:
+                # Start, end indexes
+                start = i - self._gamma
+                end = i
+
+                # Limits
+                if start < 0:
+                    start = 0
+                # end if
+
+                # Temporary inputs
+                tmp_inputs = y[start:end, :].flatten()
+
+                # Set
+                current_inputs[side_size - tmp_inputs.shape[0]:side_size] = tmp_inputs
+            # end if
+
+            # After inputs
+            if i == x.shape[0] - 1:
+                current_inputs[side_size:] = zero_inputs
+            else:
+                # Start, end indexes
+                start = i+1
+                end = i+1+self._gamma
+
+                # Limits
+                if end > y.shape[0]:
+                    end = y.shape[0] + 1
+                # end if
+
+                # Temporary inputs
+                tmp_inputs = y[start:end, :].flatten()
+
+                # Get
+                current_inputs[side_size:side_size+tmp_inputs.shape[0]] = y[start:end, :]
+            # end if
+
+            # Set in y
+            y[i, :] = current_inputs
+        # end for
+
+        return y
+    # end _echo2word_outputs
+
+    # Extract with echo2word
+    def _extract_echo2word(self):
+        """
+        Extract with echo2word
+        :return:
+        """
+        # Input and output
+        X = list()
+        Y = list()
+
+        # For each example
+        for x in self._examples:
+            # Add to data
+            X.append(x)
+            Y.append(self._echo2word_outputs(x))
+        # end for
+
+        # List of states
+        joined_states_lr = list()
+        joined_states_rl = list()
+
+        # Compute the states from left to right
+        if self._direction == 'both' or self._direction == 'lr':
+            for x in X:
+                tmp_states = self._reservoir.execute(x)
+                joined_states_lr.append(self._join.execute(tmp_states)[1:, :])
+            # end for
+        # end if
+
+        # Compute the states from right to left
+        if self._direction == 'both' or self._direction == 'rl':
+            for x in X:
+                reversed_inputs = self._flip_matrix(x)
+                tmp_states = self._reservoir.execute(reversed_inputs)
+                joined_states_rl.append(np.flip(self._join.execute(tmp_states)[1:, :], axis=0))
+            # end for
+        # end if
+
+        # Merge both direction if needed
+        if self._direction == 'both':
+            merge_states = list()
+            for index, state_lr in enumerate(joined_states_lr):
+                merge_states.append(np.hstack((state_lr, joined_states_rl[index])))
+            # end for
+        elif self._direction == 'lr':
+            merge_states = joined_states_lr[:-1]
+        elif self._direction == 'rl':
+            merge_states = joined_states_rl.reverse()[1:]
+        # end if
+
+        # Data
+        data = [zip(merge_states, Y)]
+
+        # Train the model
+        self._flow.train(data)
+
+        # Trained
+        self._trained = True
+    # end _extract_echo2word
+
+    # Extract with word2echo
+    def _extract_word2echo(self):
+        """
+        Extract with word2echo
+        :return:
+        """
+        # Input and output
+        X = list()
+        Y = list()
+
+        # For each example
+        for x in self._examples:
+            # Add to data
+            X.append(x)
+            Y.append(x)
+        # end for
+
+        # List of states
+        joined_states_lr = list()
+        joined_states_rl = list()
+
+        # Compute the states from left to right
+        if self._direction == 'both' or self._direction == 'lr':
+            for x in X:
+                tmp_states = self._reservoir.execute(x)
+                joined_states_lr.append(self._join.execute(tmp_states)[:-1, :])
+                # end for
+        # end if
+
+        # Compute the states from right to left
+        if self._direction == 'both' or self._direction == 'rl':
+            for x in X:
+                reversed_inputs = self._flip_matrix(x)
+                tmp_states = self._reservoir.execute(reversed_inputs)
+                joined_states_rl.append(np.flip(self._join.execute(tmp_states)[:-1, :], axis=0))
+                # end for
+        # end if
+
+        # Merge both direction if needed
+        if self._direction == 'both':
+            merge_states = list()
+            for index, state_lr in enumerate(joined_states_lr):
+                merge_states.append(np.hstack((state_lr, joined_states_rl[index])))
+                # end for
+        elif self._direction == 'lr':
+            merge_states = joined_states_lr[:-1]
+        elif self._direction == 'rl':
+            merge_states = joined_states_rl.reverse()[1:]
+        # end if
+
+        # Data
+        data = [zip(merge_states, Y)]
+
+        # Train the model
+        self._flow.train(data)
+
+        # Trained
+        self._trained = True
+    # end _extract_word2echo
+
+    # Flip sparse matrix
+    def _flip_matrix(self, m):
+        """
+        Flip sparse matrix
+        :param m:
+        :return:
+        """
+        # New CSR
+        m_flip = scipy.sparse.csr_matrix((m.shape[0], m.shape[1]))
+
+        # Go backward
+        j = 0
+        for i in np.arange(m.shape[0]-1, -1, -1):
+            m_flip[j, :] = m[i, :]
+            j += 1
+        # end for
+
+        return m_flip
+    # end _flip_matrix
+
     # Generate outputs
     def _generate_dataset(self, x):
         """
@@ -287,7 +467,8 @@ class Word2Echo(object):
     # Create a Word2Echo model
     @staticmethod
     def create(rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
-               rc_w_sparsity, model_type, direction, w=None, voc_size=10000, uppercase=False, state_gram=1):
+               rc_w_sparsity, model_type, direction, w=None, voc_size=10000, uppercase=False, state_gram=1,
+               converter=None, word_embeddings=None):
         """
         Create a Word2Echo model
         :param rc_size:
@@ -302,7 +483,11 @@ class Word2Echo(object):
         :return:
         """
         # Converter
-        converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
+        if converter is None:
+            converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
+        else:
+            converter.reset_total_count()
+        # end if
 
         # Create the Word2Echo
         word2echo_model = Word2Echo \
@@ -317,7 +502,8 @@ class Word2Echo(object):
             w=w,
             model=model_type,
             direction=direction,
-            state_gram=state_gram
+            state_gram=state_gram,
+            word_embeddings=word_embeddings
         )
 
         return word2echo_model
