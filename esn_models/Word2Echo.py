@@ -196,10 +196,14 @@ class Word2Echo(object):
         Add text example
         :param x: List of vector representations
         """
+        # Input through converter
+        converter_inputs = self._converter(x)
+
+        # Add input outputs
         if self._word_embeddings is not None:
-            self._examples.append(self._word_embeddings(x))
+            self._examples.append((self._word_embeddings(x), converter_inputs))
         else:
-            self._examples.append(self._converter(x))
+            self._examples.append((converter_inputs, converter_inputs))
         # end if
     # end add
 
@@ -321,10 +325,10 @@ class Word2Echo(object):
         Y = list()
 
         # For each example
-        for x in self._examples:
+        for (x, y) in self._examples:
             # Add to data
             X.append(x)
-            Y.append(self._echo2word_outputs(x))
+            Y.append(self._echo2word_outputs(y))
         # end for
 
         # List of states
@@ -381,10 +385,10 @@ class Word2Echo(object):
         Y = list()
 
         # For each example
-        for x in self._examples:
+        for (x, y) in self._examples:
             # Add to data
             X.append(x)
-            Y.append(x)
+            Y.append(y)
         # end for
 
         # List of states
@@ -468,7 +472,7 @@ class Word2Echo(object):
     @staticmethod
     def create(rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
                rc_w_sparsity, model_type, direction, w=None, voc_size=10000, uppercase=False, state_gram=1,
-               converter=None, word_embeddings=None):
+               converter=None, word_embeddings=None, gamma=1):
         """
         Create a Word2Echo model
         :param rc_size:
@@ -485,8 +489,8 @@ class Word2Echo(object):
         # Converter
         if converter is None:
             converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
-        else:
-            converter.reset_total_count()
+        #else:
+        #     converter.reset_word_count()
         # end if
 
         # Create the Word2Echo
@@ -503,7 +507,8 @@ class Word2Echo(object):
             model=model_type,
             direction=direction,
             state_gram=state_gram,
-            word_embeddings=word_embeddings
+            word_embeddings=word_embeddings,
+            gamma=gamma
         )
 
         return word2echo_model
