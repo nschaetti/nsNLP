@@ -47,7 +47,7 @@ class Embeddings(object):
         # Globals
         self._word2vec = dict()
         self._properties = dict()
-        self._size = size
+        self._size = int(size)
         self._property_list = list()
     # end __init__
 
@@ -422,7 +422,7 @@ class Embeddings(object):
             word_vector = self[word_text]
 
             # Not found
-            if word_vector is not None:
+            if word_vector is None:
                 word_vector = np.zeros(self.size)
             # end if
 
