@@ -409,7 +409,7 @@ class Word2Echo(object):
                 reversed_inputs = self._flip_matrix(x)
                 tmp_states = self._reservoir.execute(reversed_inputs)
                 joined_states_rl.append(np.flip(self._join.execute(tmp_states)[:-1, :], axis=0))
-                # end for
+            # end for
         # end if
 
         # Merge both direction if needed
