@@ -401,21 +401,41 @@ class Embeddings(object):
     ############################################
 
     # Get vectors from word-symbols
-    def __call__(self, words):
+    def __call__(self, tokens):
         """
         Get vectors from word-symbols
         :param items:
         :return:
         """
-        # List of vectors
-        vectors = list()
+        # Resulting numpy array
+        doc_array = np.array([])
 
-        # For each word-symbol
-        for word in words:
-            vectors.append(self[word])
+        # For each token
+        ok = False
+        for index, word in enumerate(tokens):
+            # Replace \n, \t, \r
+            word_text = word.replace(u"\n", u"")
+            word_text = word_text.replace(u"\t", u"")
+            word_text = word_text.replace(u"\r", u"")
+
+            # Get vector
+            word_vector = self[word_text]
+
+            # Not found
+            if word_vector is not None:
+                word_vector = np.zeros(self.size)
+            # end if
+
+            # Stack
+            if not ok:
+                doc_array = word_vector
+                ok = True
+            else:
+                doc_array = np.vstack((doc_array, word_vector))
+            # end if
         # end for
 
-        return vectors
+        return doc_array
     # end __call__
 
     # Get a vector from a word-symbol
