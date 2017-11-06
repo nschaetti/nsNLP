@@ -30,6 +30,7 @@ import matplotlib
 import scipy.stats
 import numpy as np
 import dataset.questions_words
+import unicodecsv as csv
 
 
 # Questions words measures
@@ -69,7 +70,7 @@ class QuestionsWords(object):
     ###########################################
 
     # Test words embeddings with positioning
-    def positioning(self, word_embeddings, measure='cosine', func='linear'):
+    def positioning(self, word_embeddings, csv_file, measure='cosine', func='linear'):
         """
         Test words embeddings with linear positioning
         :param word_embeddings:
@@ -81,44 +82,60 @@ class QuestionsWords(object):
         # Counters
         total = 0.0
 
-        # For each questions-words
-        for (word1, word2, word3, response_word) in self._questions_words:
-            # Get all vectors
-            vec1 = word_embeddings[word1]
-            vec2 = word_embeddings[word2]
-            vec3 = word_embeddings[word3]
-            observation = word_embeddings[response_word]
+        # Write CSV
+        # File
+        with open(csv_file, 'wb') as f:
+            # CSV writer
+            csv_writer = csv.writer(f, )
 
-            # No unknown words
-            if vec1 is not None and vec2 is not None and vec3 is not None and observation is not None:
-                # Get nearest word
-                predictions = word_embeddings.similar_words(vec1 - vec2 + vec3, count=word_embeddings.voc_size,
-                                                            measure_func=measure)
+            # Write header
+            csv_writer.writerow([u"word1", u"word2", u"word3", u"result", u"position"] + [unicode(i+1) for i in range(100)])
 
-                # Find the position
-                for index, (pred_word, pred_measure) in enumerate(predictions):
-                    if pred_word == response_word:
-                        word_pos = index + 1
-                        break
+            # For each questions-words
+            for (word1, word2, word3, response_word) in self._questions_words:
+                # Get all vectors
+                vec1 = word_embeddings[word1]
+                vec2 = word_embeddings[word2]
+                vec3 = word_embeddings[word3]
+                observation = word_embeddings[response_word]
+
+                # No unknown words
+                if vec1 is not None and vec2 is not None and vec3 is not None and observation is not None:
+                    # Get nearest word
+                    predictions = word_embeddings.similar_words(vec1 - vec2 + vec3, count=word_embeddings.voc_size,
+                                                                measure_func=measure)
+
+                    # Find the position
+                    for index, (pred_word, pred_measure) in enumerate(predictions):
+                        if pred_word == response_word:
+                            word_pos = index + 1
+                            break
+                        # end if
+                    # end for
+
+                    # Row array
+                    row = [word1, word2, word3, response_word, word_pos] + [str(el) for el in predictions[:100]]
+
+                    # Compute positioning
+                    if func == 'linear':
+                        word_positioning = self._linear_positioning(word_pos, word_embeddings.voc_size)
+                    elif func == 'inv':
+                        word_positioning = self._inverse_positioning(word_pos, word_embeddings.voc_size)
+                    else:
+                        raise Exception(u"Unknown positioning function")
                     # end if
-                # end for
 
-                # Compute positioning
-                if func == 'linear':
-                    word_positioning = self._linear_positioning(word_pos, word_embeddings.voc_size)
-                elif func == 'inv':
-                    word_positioning = self._inverse_positioning(word_pos, word_embeddings.voc_size)
-                else:
-                    raise Exception(u"Unknown positioning function")
+                    # Add to total positionings
+                    positionings.append(word_positioning)
+
+                    # Write to CSV
+                    csv_writer.writerow(row)
                 # end if
 
-                # Add to total positionings
-                positionings.append(word_positioning)
-            # end if
-
-            # Total
-            total += 1.0
-        # end for
+                # Total
+                total += 1.0
+            # end for
+        # end with
 
         return np.average(positionings), positionings, float(len(positionings)) / total
     # end linear_positioning
