@@ -488,7 +488,7 @@ class Embeddings(object):
         :param word_embeddings:
         :return:
         """
-        model = PCA(n_components=2, random_state=0)
+        model = PCA(n_components=2)
         return model.fit_transform(word_embeddings.T)
     # end reduction_pca
 
