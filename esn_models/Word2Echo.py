@@ -6,6 +6,7 @@ import Oger
 import mdp
 import spacy
 import scipy.sparse
+import nodes
 from converters.OneHotConverter import OneHotConverter
 from nsNLP.embeddings.Embeddings import Embeddings
 
@@ -52,11 +53,18 @@ class Word2Echo(object):
         self._w = w
         self._model = model
         self._trained = False
-        self._state_gram = state_gram
+        self._state_gram = int(state_gram)
         self._direction = direction
         self._word_embeddings = word_embeddings
         self._gamma = gamma
         self._n_threads = n_threads
+
+        # Direction
+        if direction == 'both':
+            self._side_size = 2
+        else:
+            self._side_size = 1
+        # end if
 
         # Input reservoir dimension
         if self._word_embeddings is None:
@@ -69,20 +77,20 @@ class Word2Echo(object):
         self._examples = list()
 
         # Create the reservoir
-        self._reservoir = Oger.nodes.LeakyReservoirNode(input_dim=self._input_dim, output_dim=self._output_dim,
-                                                        input_scaling=input_scaling, leak_rate=leaky_rate,
-                                                        spectral_radius=spectral_radius,
-                                                        sparsity=input_sparsity, w_sparsity=w_sparsity,
-                                                        w_in=w_in, use_sparse_matrix=True)
+        self._wordecho = nodes.WordEchoNode(input_dim=self._input_dim, output_dim=self._output_dim,
+                                                    input_scaling=input_scaling, leak_rate=leaky_rate,
+                                                    spectral_radius=spectral_radius,
+                                                    sparsity=input_sparsity, w_sparsity=w_sparsity,
+                                                    w_in=w_in, use_sparse_matrix=True, direction=direction)
 
         # Components
         self._readout = None
-        self._join = None
         self._flow = None
         self._scheduler = None
+        self._context = None
 
         # Reset state at each call
-        self._reservoir.reset_states = True
+        self._wordecho.reset_states = True
 
         # Ridge Regression
         self._readout = Oger.nodes.RidgeRegressionNode()
@@ -214,12 +222,42 @@ class Word2Echo(object):
         """
         Extract embeddings
         """
+        # Input and output
+        X = list()
+        Y = list()
+
+        # For each example
+        for (x, y) in self._examples:
+            # Add to data
+            X.append(x)
+
+            # Generate output
+            if self._model == 'echo2word':
+                Y.append(y)
+            else:
+                Y.append(self._word2echo_outputs(y))
+            # end if
+        # end for
+
         # Extract giving the model
         if self._model == 'word2echo':
-            self._extract_word2echo()
+            data = Word2Echo.data_word2echo(X, Y)
         elif self._model == 'echo2word':
-            self._extract_echo2word()
+            data = Word2Echo.data_echo2word(X, Y)
         # end if
+
+        # Parallel or sequencial processing
+        if self._n_threads > 1:
+            # Train the model
+            self._flow.train(data, self._scheduler)
+            self._scheduler.shutdown()
+        else:
+            # Train the model
+            self._flow.train(data)
+        # end if
+
+        # Trained
+        self._trained = True
     # end train
 
     # Reset learning but keep reservoir
@@ -228,7 +266,7 @@ class Word2Echo(object):
         Reset learning but keep reservoir
         :return:
         """
-        del self._readout, self._flow, self._join
+        del self._readout, self._flow
 
         # Reset dataset
         self._examples = list()
@@ -236,16 +274,27 @@ class Word2Echo(object):
         # Ridge Regression
         self._readout = Oger.nodes.RidgeRegressionNode()
 
-        # Join
-        self._join = Oger.nodes.JoinedStatesNode(input_dim=self._output_dim, joined_size=self._state_gram,
-                                                 fill_before=True)
+        # Context states
+        if self._model == 'echo2word':
+            self._context = nodes.ContextStateNode(direction=self._direction,
+                                                   input_size=self._output_dim * self._side_size,
+                                                   state_gram=self._state_gram)
+        # end if
 
         # Flow
         if self._n_threads == 1:
-            self._flow = mdp.Flow([self._readout], verbose=0)
+            if self._model == 'echo2word':
+                self._flow = mdp.Flow([self._wordecho, self._context, self._readout], verbose=0)
+            else:
+                self._flow = mdp.Flow([self._wordecho, self._readout], verbose=0)
+            # end if
         else:
-            self._flow = mdp.parallel.ParallelFlow([self._readout], verbose=0)
-            self._scheduler = mdp.parallel.ThreadScheduler(n_threads=self._n_threads, verbose=False)
+            if self._model == 'echo2word':
+                self._flow = mdp.parallel.ParallelFlow([self._wordecho, self._context, self._readout], verbose=1)
+            else:
+                self._flow = mdp.parallel.ParallelFlow([self._wordecho, self._readout], verbose=1)
+            # end if
+            self._scheduler = mdp.parallel.ThreadScheduler(n_threads=self._n_threads, verbose=True, copy_callable=False)
         # end if
     # end reset_model
 
@@ -254,7 +303,7 @@ class Word2Echo(object):
     ###############################################
 
     # Get Echo2Word outputs
-    def _echo2word_outputs(self, x):
+    def _word2echo_outputs(self, x):
         """
         Get Echo2Word outputs
         :param x:
@@ -321,180 +370,41 @@ class Word2Echo(object):
         return y
     # end _echo2word_outputs
 
-    # Extract with echo2word
-    def _extract_echo2word(self):
-        """
-        Extract with echo2word
-        :return:
-        """
-        # Input and output
-        X = list()
-        Y = list()
-
-        # For each example
-        for (x, y) in self._examples:
-            # Add to data
-            X.append(x)
-            Y.append(self._echo2word_outputs(y))
-        # end for
-
-        # List of states
-        joined_states_lr = list()
-        joined_states_rl = list()
-
-        # Compute the states from left to right
-        if self._direction == 'both' or self._direction == 'lr':
-            for x in X:
-                tmp_states = self._reservoir.execute(x)
-                joined_states_lr.append(self._join.execute(tmp_states)[1:, :])
-            # end for
-        # end if
-
-        # Compute the states from right to left
-        if self._direction == 'both' or self._direction == 'rl':
-            for x in X:
-                reversed_inputs = self._flip_matrix(x)
-                tmp_states = self._reservoir.execute(reversed_inputs)
-                joined_states_rl.append(np.flip(self._join.execute(tmp_states)[1:, :], axis=0))
-            # end for
-        # end if
-
-        # Merge both direction if needed
-        if self._direction == 'both':
-            merge_states = list()
-            for index, state_lr in enumerate(joined_states_lr):
-                merge_states.append(np.hstack((state_lr, joined_states_rl[index])))
-            # end for
-        elif self._direction == 'lr':
-            merge_states = joined_states_lr[:-1]
-        elif self._direction == 'rl':
-            merge_states = joined_states_rl.reverse()[1:]
-        # end if
-
-        # Data
-        data = [zip(merge_states, Y)]
-
-        # Parallel or sequencial processing
-        if self._n_threads > 1:
-            # Train the model
-            self._flow.train(data, self._scheduler)
-            self._scheduler.shutdown()
-        else:
-            # Train the model
-            self._flow.train(data)
-        # end if
-
-        # Trained
-        self._trained = True
-    # end _extract_echo2word
-
-    # Extract with word2echo
-    def _extract_word2echo(self):
-        """
-        Extract with word2echo
-        :return:
-        """
-        # Input and output
-        X = list()
-        Y = list()
-        print("generating states")
-        # For each example
-        for (x, y) in self._examples:
-            # Add to data
-            X.append(x)
-            Y.append(y)
-        # end for
-
-        # List of states
-        joined_states_lr = list()
-        joined_states_rl = list()
-
-        # Compute the states from left to right
-        if self._direction == 'both' or self._direction == 'lr':
-            for x in X:
-                tmp_states = self._reservoir.execute(x)
-                joined_states_lr.append(self._join.execute(tmp_states)[:-1, :])
-                # end for
-        # end if
-
-        # Compute the states from right to left
-        if self._direction == 'both' or self._direction == 'rl':
-            for x in X:
-                reversed_inputs = self._flip_matrix(x)
-                tmp_states = self._reservoir.execute(reversed_inputs)
-                joined_states_rl.append(np.flip(self._join.execute(tmp_states)[:-1, :], axis=0))
-            # end for
-        # end if
-
-        # Merge both direction if needed
-        if self._direction == 'both':
-            merge_states = list()
-            for index, state_lr in enumerate(joined_states_lr):
-                merge_states.append(np.hstack((state_lr, joined_states_rl[index])))
-                # end for
-        elif self._direction == 'lr':
-            merge_states = joined_states_lr[:-1]
-        elif self._direction == 'rl':
-            merge_states = joined_states_rl.reverse()[1:]
-        # end if
-
-        # Data
-        data = [zip(merge_states, Y)]
-
-        # Parallel or sequencial processing
-        print(self._n_threads)
-        if self._n_threads > 1:
-            # Train the model
-            self._flow.train(data, self._scheduler)
-            self._scheduler.shutdown()
-        else:
-            # Train the model
-            self._flow.train(data)
-        # end if
-
-        # Trained
-        self._trained = True
-    # end _extract_word2echo
-
-    # Flip sparse matrix
-    def _flip_matrix(self, m):
-        """
-        Flip sparse matrix
-        :param m:
-        :return:
-        """
-        # New CSR
-        m_flip = scipy.sparse.csr_matrix((m.shape[0], m.shape[1]))
-
-        # Go backward
-        j = 0
-        for i in np.arange(m.shape[0]-1, -1, -1):
-            m_flip[j, :] = m[i, :]
-            j += 1
-        # end for
-
-        return m_flip
-    # end _flip_matrix
-
-    # Generate outputs
-    def _generate_dataset(self, x):
-        """
-        Generate outputs
-        :param x:
-        :return:
-        """
-        return 1, 2
-    # end _generate_outputs
-
     ###############################################
     # Static
     ###############################################
+
+    # Create training data for word2echo
+    @staticmethod
+    def data_word2echo(X, Y):
+        """
+        Create training data for word2echo
+        :param X:
+        :param Y:
+        :return:
+        """
+        # Data
+        return [None, zip(X, Y)]
+    # end _extract_echo2word
+
+    # Create training data for echo2word
+    @staticmethod
+    def data_echo2word(X, Y):
+        """
+        Create training data for word2echo
+        :param X:
+        :param Y:
+        :return:
+        """
+        # Data
+        return [None, None, zip(X, Y)]
+    # end data_echo2word
 
     # Create a Word2Echo model
     @staticmethod
     def create(rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
                rc_w_sparsity, model_type, direction, w=None, voc_size=10000, uppercase=False, state_gram=1,
-               converter=None, word_embeddings=None, gamma=1, parallel=False, n_threads=2):
+               converter=None, word_embeddings=None, gamma=1, n_threads=2):
         """
         Create a Word2Echo model
         :param rc_size:
@@ -511,8 +421,6 @@ class Word2Echo(object):
         # Converter
         if converter is None:
             converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
-        #else:
-        #     converter.reset_word_count()
         # end if
 
         # Create the Word2Echo

@@ -31,3 +31,5 @@ from converters.OneHotConverter import OneHotConverter, OneHotVectorFullExceptio
 from converters.PosConverter import PosConverter
 from converters.TagConverter import TagConverter
 from converters.WVConverter import WVConverter
+from nodes.ContextStatesNode import ContextStateNode
+from nodes.WordEchoNode import WordEchoNode
