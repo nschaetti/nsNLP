@@ -53,7 +53,7 @@ class ESNTextClassifier(TextClassifier):
 
     # Constructor
     def __init__(self, classes, size, leak_rate, input_scaling, w_sparsity, input_sparsity, spectral_radius, converter,
-                 w=None, aggregation='average', use_sparse_matrix=False, smoothing=0.01, state_gram=1):
+                 w=None, aggregation='average', use_sparse_matrix=False, smoothing=0.01, state_gram=1, parallel=False):
         """
         Constructor
         :param classes: Set of possible classes
@@ -85,6 +85,11 @@ class ESNTextClassifier(TextClassifier):
         self._author_token_count = np.zeros(self._n_classes)
         self._smoothing = smoothing
         self._state_gram = state_gram
+
+        # Parallel
+        if parallel and 'parallel' in mdp.get_extensions().keys():
+            mdp.activate_extension('parallel')
+        # end if
 
         # Create the reservoir
         self._reservoir = Oger.nodes.LeakyReservoirNode(input_dim=self._input_dim, output_dim=self._output_dim,
@@ -405,7 +410,7 @@ class ESNTextClassifier(TextClassifier):
     @staticmethod
     def create(classes, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
                rc_w_sparsity, converters_desc, w=None, voc_size=10000, uppercase=False,
-               use_sparse_matrix=False, aggregation='average', pca_path="", state_gram=1):
+               use_sparse_matrix=False, aggregation='average', pca_path="", state_gram=1, parallel=False):
         """
         Constructor
         :param classes: Possible classes
@@ -481,7 +486,8 @@ class ESNTextClassifier(TextClassifier):
             use_sparse_matrix=use_sparse_matrix,
             w=w,
             aggregation=aggregation,
-            state_gram=state_gram
+            state_gram=state_gram,
+            parallel=parallel
         )
 
         return classifier
