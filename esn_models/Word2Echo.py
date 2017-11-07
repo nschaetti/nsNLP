@@ -23,7 +23,7 @@ class Word2Echo(object):
     # Constructor
     def __init__(self, converter, size, leaky_rate, spectral_radius, input_scaling=0.25, input_sparsity=0.1,
                  w_sparsity=0.1, w_in=None, w=None, model='word2echo', state_gram=1, direction='both',
-                 word_embeddings=None, gamma=1):
+                 word_embeddings=None, gamma=1, n_threads=1):
         """
         Constructor
         :param converter: Text converter
@@ -56,6 +56,7 @@ class Word2Echo(object):
         self._direction = direction
         self._word_embeddings = word_embeddings
         self._gamma = gamma
+        self._n_threads = n_threads
 
         # Input reservoir dimension
         if self._word_embeddings is None:
@@ -78,6 +79,7 @@ class Word2Echo(object):
         self._readout = None
         self._join = None
         self._flow = None
+        self._scheduler = None
 
         # Reset state at each call
         self._reservoir.reset_states = True
@@ -239,7 +241,12 @@ class Word2Echo(object):
                                                  fill_before=True)
 
         # Flow
-        self._flow = mdp.Flow([self._readout], verbose=0)
+        if self._n_threads == 1:
+            self._flow = mdp.Flow([self._readout], verbose=0)
+        else:
+            self._flow = mdp.parallel.ParallelFlow([self._readout], verbose=0)
+            self._scheduler = mdp.parallel.ThreadScheduler(n_threads=self._n_threads, verbose=False)
+        # end if
     # end reset_model
 
     ###############################################
@@ -367,8 +374,15 @@ class Word2Echo(object):
         # Data
         data = [zip(merge_states, Y)]
 
-        # Train the model
-        self._flow.train(data)
+        # Parallel or sequencial processing
+        if self._n_threads > 1:
+            # Train the model
+            self._flow.train(data, self._scheduler)
+            self._scheduler.shutdown()
+        else:
+            # Train the model
+            self._flow.train(data)
+        # end if
 
         # Trained
         self._trained = True
@@ -383,7 +397,7 @@ class Word2Echo(object):
         # Input and output
         X = list()
         Y = list()
-
+        print("generating states")
         # For each example
         for (x, y) in self._examples:
             # Add to data
@@ -427,8 +441,16 @@ class Word2Echo(object):
         # Data
         data = [zip(merge_states, Y)]
 
-        # Train the model
-        self._flow.train(data)
+        # Parallel or sequencial processing
+        print(self._n_threads)
+        if self._n_threads > 1:
+            # Train the model
+            self._flow.train(data, self._scheduler)
+            self._scheduler.shutdown()
+        else:
+            # Train the model
+            self._flow.train(data)
+        # end if
 
         # Trained
         self._trained = True
@@ -472,7 +494,7 @@ class Word2Echo(object):
     @staticmethod
     def create(rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
                rc_w_sparsity, model_type, direction, w=None, voc_size=10000, uppercase=False, state_gram=1,
-               converter=None, word_embeddings=None, gamma=1):
+               converter=None, word_embeddings=None, gamma=1, parallel=False, n_threads=2):
         """
         Create a Word2Echo model
         :param rc_size:
@@ -508,7 +530,8 @@ class Word2Echo(object):
             direction=direction,
             state_gram=state_gram,
             word_embeddings=word_embeddings,
-            gamma=gamma
+            gamma=gamma,
+            n_threads=n_threads
         )
 
         return word2echo_model
