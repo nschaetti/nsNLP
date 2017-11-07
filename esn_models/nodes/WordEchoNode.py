@@ -32,7 +32,7 @@ import scipy.sparse
 #########################################
 # Word Echo node
 #########################################
-class WordEchoNode(Oger.nodes.ReservoirNode):
+class WordEchoNode(Oger.nodes.LeakyReservoirNode):
     """
     A EchoWord node
     """
@@ -41,44 +41,39 @@ class WordEchoNode(Oger.nodes.ReservoirNode):
     direction = ""
 
     # Constructor
-    def __init__(self, input_dim=None, output_dim=None, spectral_radius=0.9,
-                 nonlin_func=np.tanh, reset_states=True, bias_scaling=0, input_scaling=1, dtype='float64', _instance=0,
-                 w_in=None, w=None, w_bias=None, sparsity=None, input_set=[1.0, -1.0], w_sparsity=None,
-                 set_initial_state=False, my_initial_state=None, use_sparse_matrix=False, direction='both'):
+    def __init__(self, output_dim, direction='both', *args, **kwargs):
         """
         Constructor
-        :param input_dim:
-        :param output_dim:
-        :param spectral_radius:
-        :param nonlin_func:
-        :param reset_states:
-        :param bias_scaling:
-        :param input_scaling:
-        :param dtype:
-        :param _instance:
-        :param w_in:
-        :param w:
-        :param w_bias:
-        :param sparsity:
-        :param input_set:
-        :param w_sparsity:
-        :param set_initial_state:
-        :param my_initial_state:
-        :param use_sparse_matrix:
         :param direction:
+        :param args:
+        :param kwargs:
         """
         # Call upper class
-        super(WordEchoNode, self).__init__(input_dim=input_dim, output_dim=output_dim,
-                                           spectral_radius=spectral_radius, nonlin_func=nonlin_func,
-                                           reset_states=reset_states, bias_scaling=bias_scaling,
-                                           input_scaling=input_scaling, dtype=dtype, _instance=_instance,
-                                           w_in=w_in, w=w, w_bias=w_bias, sparsity=sparsity, input_set=input_set,
-                                           w_sparsity=w_sparsity, set_initial_state=set_initial_state,
-                                           my_initial_state=my_initial_state, use_sparse_matrix=use_sparse_matrix)
+        super(WordEchoNode, self).__init__(output_dim=output_dim, *args, **kwargs)
 
         # Properties
         self.direction = direction
+
+        # Output states size
+        if direction == 'both':
+            self.output_states_size = output_dim * 2
+        else:
+            self.output_states_size = output_dim
+        # end if
     # end __init__
+
+    ###############################################
+    # Public
+    ###############################################
+
+    # This node is not trainable
+    def is_trainable(self):
+        """
+        This node is not trainable
+        :return:
+        """
+        return False
+    # end is_trainable
 
     ###############################################
     # Private
@@ -97,27 +92,33 @@ class WordEchoNode(Oger.nodes.ReservoirNode):
 
         # Compute the states from left to right
         if self.direction == 'both' or self.direction == 'lr':
-            lr_states = super(Oger.nodes.ReservoirNode, self)._execute(x)[:-1, :]
+            lr_states = super(WordEchoNode, self)._execute(x)
         # end if
 
         # Compute the states from right to left
         if self.direction == 'both' or self.direction == 'rl':
-            reversed_inputs = self._flip_matrix(x)
-            rl_states = super(Oger.nodes.ReservoirNode, self)._execute(reversed_inputs)[:-1, :]
+            reversed_inputs = WordEchoNode.flip_matrix(x)
+            rl_states = np.flip(super(WordEchoNode, self)._execute(reversed_inputs), axis=0)
         # end if
 
         # Return
-        if self.direction == 'both':
-            return lr_states, rl_states
-        elif self.direction == 'lr':
+        if self.direction == 'lr':
             return lr_states
-        else:
+        elif self.direction == 'rl':
             return rl_states
+        else:
+            join_states = np.hstack((lr_states, rl_states))
+            return join_states
         # end if
     # _execute
 
+    ###############################################
+    # Static
+    ###############################################
+
     # Flip sparse matrix
-    def _flip_matrix(self, m):
+    @staticmethod
+    def flip_matrix(m):
         """
         Flip sparse matrix
         :param m:
@@ -137,22 +138,4 @@ class WordEchoNode(Oger.nodes.ReservoirNode):
     # end _flip_matrix
 
 # end
-
-
-# Parallel Word Echo node
-class ParallelWordEchoNode(mdp.parallel.ParallelExtensionNode, WordEchoNode):
-    """
-    Parallel Word Echo node
-    """
-
-    # Fork
-    def _fork(self):
-        """
-        Fork
-        :return:
-        """
-        return self._default_fork()
-    # end _fork
-
-# end ParallelWordEchoNode
 
