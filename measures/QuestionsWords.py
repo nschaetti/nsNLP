@@ -31,6 +31,7 @@ import scipy.stats
 import numpy as np
 import dataset.questions_words
 import unicodecsv as csv
+import math
 
 
 # Questions words measures
@@ -89,7 +90,7 @@ class QuestionsWords(object):
             csv_writer = csv.writer(f, )
 
             # Write header
-            csv_writer.writerow([u"word1", u"word2", u"word3", u"result", u"position"] + [unicode(i+1) for i in range(100)])
+            csv_writer.writerow([u"word1", u"word2", u"word3", u"result", u"position", u"measure"] + [unicode(i+1) for i in range(100)])
 
             # For each questions-words
             for (word1, word2, word3, response_word) in self._questions_words:
@@ -113,20 +114,22 @@ class QuestionsWords(object):
                         # end if
                     # end for
 
-                    # Row array
-                    row = [word1, word2, word3, response_word, word_pos] + [str(el) for el in predictions[:100]]
-
                     # Compute positioning
                     if func == 'linear':
                         word_positioning = self._linear_positioning(word_pos, word_embeddings.voc_size)
+                        mu = 0
                     elif func == 'inv':
                         word_positioning = self._inverse_positioning(word_pos, word_embeddings.voc_size)
+                        mu = math.log(word_embeddings.voc_size) / float(word_embeddings.voc_size)
                     else:
                         raise Exception(u"Unknown positioning function")
                     # end if
 
                     # Add to total positionings
                     positionings.append(word_positioning)
+
+                    # Row array
+                    row = [word1, word2, word3, response_word, word_pos, word_positioning] + [str(el) for el in predictions[:40]]
 
                     # Write to CSV
                     csv_writer.writerow(row)
@@ -137,7 +140,7 @@ class QuestionsWords(object):
             # end for
         # end with
 
-        return np.average(positionings), positionings, float(len(positionings)) / total
+        return np.average(positionings), positionings, float(len(positionings)) / total, scipy.stats.ttest_1samp(positionings, popmean=mu).pvalue
     # end linear_positioning
 
     # Test several embeddings and compare with t-test
@@ -189,7 +192,7 @@ class QuestionsWords(object):
         :param voc_size:
         :return:
         """
-        return 1.0 - (float(word_pos-1) / float(voc_size))
+        return -((2.0*float(word_pos))/float(voc_size)) + 1.0
     # end _linear_positioning
 
     # Inverse positioning
