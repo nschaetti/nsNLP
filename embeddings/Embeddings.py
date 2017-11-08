@@ -30,6 +30,7 @@ from sklearn.decomposition import PCA
 import pylab as plt
 import codecs
 import unicodecsv as csv
+import pickle
 
 
 # Transform word to a vector
@@ -373,14 +374,10 @@ class Embeddings(object):
         mean_y = np.average(reduced_matrix[:, 1])
 
         # Std
-        std_x = np.std(reduced_matrix[:, 0])
-        std_y = np.std(reduced_matrix[:, 1])
+        std_x = np.std(reduced_matrix[:, 0]) * 0.25
+        std_y = np.std(reduced_matrix[:, 1]) * 0.25
 
         # Limits
-        max_x = np.amax(reduced_matrix, axis=0)[0]
-        max_y = np.amax(reduced_matrix, axis=0)[1]
-        min_x = np.amin(reduced_matrix, axis=0)[0]
-        min_y = np.amin(reduced_matrix, axis=0)[1]
         plt.xlim((mean_x - std_x, mean_x + std_x))
         plt.ylim((mean_y - std_y, mean_y + std_y))
 
@@ -455,6 +452,19 @@ class Embeddings(object):
     ############################################
     # Static
     ############################################
+
+    # Load
+    @staticmethod
+    def load(filename):
+        """
+        Load
+        :param filename:
+        :return:
+        """
+        with open(filename, 'rb') as f:
+            return pickle.load(file=f)
+        # end with
+    # end load
 
     @staticmethod
     def reduction(word_embeddings, reduction='TSNE'):
