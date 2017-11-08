@@ -19,13 +19,14 @@ class Clutering(object):
         Constructor
         """
         # Variables
-        self._sample_names = list()
+        self._samples= list()
         self._sample_vectors = dict()
         self._distance_matrix = np.array([])
         self._text2index = dict()
         self._index2text = dict()
         self._n_texts = 0
         self._distance_measured = False
+        self._clusters = list()
     # end __init__
 
     ########################################
@@ -33,7 +34,7 @@ class Clutering(object):
     ########################################
 
     # Add a sample
-    def add(self, name, vector):
+    def add(self, sample, vector):
         """
         Add a sample
         :param name:
@@ -41,24 +42,24 @@ class Clutering(object):
         :return:
         """
         # Check
-        if name in self._sample_names:
+        if sample in self._samples:
             raise Exception(u"Sample already in the clustering")
         # end if
 
         # Add name and vector
-        self._sample_names.append(name)
-        self._sample_vectors[name] = vector
+        self._samples.append(sample)
+        self._sample_vectors[sample] = vector
 
         # Set dict
-        self._text2index[name] = self._n_texts
-        self._index2text[self._n_texts] = name
+        self._text2index[sample] = self._n_texts
+        self._index2text[self._n_texts] = sample
 
         # Inc
         self._n_texts += 1
     # end add
 
     # Update a sample
-    def update(self, name, vector):
+    def update(self, sample, vector):
         """
         Update a sample
         :param name:
@@ -66,16 +67,16 @@ class Clutering(object):
         :return:
         """
         # Check
-        if name not in self._sample_names:
+        if sample not in self._samples:
             raise Exception(u"Sample not in the clustering")
         # end if
 
         # Update vector
-        self._sample_vectors[name] = vector
+        self._sample_vectors[sample] = vector
     # end update
 
-    # Cluster
-    def cluster(self, measure='cosine'):
+    # Clusters
+    def clusters(self, measure='cosine'):
         """
         Cluster
         :param measure:
@@ -93,7 +94,8 @@ class Clutering(object):
         :return:
         """
         # List of distance
-
+        pass
+    # end
 
     ########################################
     # Private
@@ -110,19 +112,19 @@ class Clutering(object):
             self._distance_matrix = np.zeros((self._n_texts, self._n_texts))
 
             # For each text
-            for i, sample1_name in self._sample_names:
-                for j, sample2_name in self._sample_names:
+            for i, sample1 in self._samples:
+                for j, sample2 in self._samples:
                     # Not the same
                     if i != j:
                         # Both index
-                        index1 = self._text2index[sample1_name]
-                        index2 = self._text2index[sample2_name]
+                        index1 = self._text2index[sample1]
+                        index2 = self._text2index[sample2]
 
                         # Not done yet
                         if self._distance_matrix[index1, index2] == 0:
                             # Vectors
-                            vector1 = self._sample_vectors[sample1_name]
-                            vector2 = self._sample_vectors[sample2_name]
+                            vector1 = self._sample_vectors[sample1]
+                            vector2 = self._sample_vectors[sample2]
 
                             # Compute distance
                             if measure == 'cosine':
