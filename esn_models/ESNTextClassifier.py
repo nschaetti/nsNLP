@@ -247,13 +247,7 @@ class ESNTextClassifier(TextClassifier):
         if self._state_gram == 1:
             data = [None, zip(X, Y)]
         else:
-            # Compute the states
-            joined_states = list()
-            for x in X:
-                tmp_states = self._reservoir.execute(x)
-                joined_states.append(self._join.execute(tmp_states))
-            # end for
-            data = [zip(joined_states, Y)]
+            data = [None, None, zip(X, Y)]
         # end if
 
         # Pre-log
@@ -286,8 +280,7 @@ class ESNTextClassifier(TextClassifier):
             y = self._flow(x)
         else:
             # Get states
-            test_states = self._join.execute(self._reservoir(x))
-            y = self._flow(test_states)
+            y = self._flow(x)
         # end if
 
         # Normalized
@@ -352,7 +345,7 @@ class ESNTextClassifier(TextClassifier):
             self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
         else:
             self._join = Oger.nodes.JoinedStatesNode(input_dim=self._output_dim, joined_size=self._state_gram)
-            self._flow = mdp.Flow([self._readout], verbose=0)
+            self._flow = mdp.Flow([self._reservoir, self._join, self._readout], verbose=0)
         # end if
 
         # Examples
@@ -420,7 +413,7 @@ class ESNTextClassifier(TextClassifier):
         :param rc_input_scaling: Reservoir's input scaling
         :param rc_input_sparsity: Reservoir's input sparsity
         :param rc_w_sparsity: Reservoir's sparsity
-        :param converter_desc: Input converter
+        :param converters_desc: Input converter
         :param w:
         :param use_sparse_matrix:
         :param pca_path:
