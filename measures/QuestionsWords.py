@@ -32,6 +32,7 @@ import numpy as np
 import dataset.questions_words
 import unicodecsv as csv
 import math
+from multiprocessing import Queue, Process, Lock
 
 
 # Questions words measures
@@ -71,7 +72,7 @@ class QuestionsWords(object):
     ###########################################
 
     # Test words embeddings with positioning
-    def positioning(self, word_embeddings, csv_file, measure='cosine', func='linear'):
+    def positioning(self, word_embeddings, csv_file, measure='cosine', func='linear', nthreads=1):
         """
         Test words embeddings with linear positioning
         :param word_embeddings:
@@ -80,67 +81,53 @@ class QuestionsWords(object):
         # Linear positions
         positionings = list()
 
-        # Counters
-        total = 0.0
+        # Total
+        total = float(len(self._questions_words))
 
         # Write CSV
-        # File
         with open(csv_file, 'wb') as f:
             # CSV writer
             csv_writer = csv.writer(f, )
 
             # Write header
-            csv_writer.writerow([u"word1", u"word2", u"word3", u"result", u"position", u"measure"] + [unicode(i+1) for i in range(100)])
+            head_row = [u"word1", u"word2", u"word3", u"result", u"position", u"measure"] + [unicode(i+1) for i in range(100)]
 
-            # For each questions-words
-            for (word1, word2, word3, response_word) in self._questions_words:
-                # Get all vectors
-                vec1 = word_embeddings[word1]
-                vec2 = word_embeddings[word2]
-                vec3 = word_embeddings[word3]
-                observation = word_embeddings[response_word]
+            # Queue
+            q = Queue()
 
-                # No unknown words
-                if vec1 is not None and vec2 is not None and vec3 is not None and observation is not None:
-                    # Get nearest word
-                    predictions = word_embeddings.similar_words(vec1 - vec2 + vec3, count=word_embeddings.voc_size,
-                                                                measure_func=measure)
+            # Locker
+            lock = Lock()
 
-                    # Find the position
-                    for index, (pred_word, pred_measure) in enumerate(predictions):
-                        if pred_word == response_word:
-                            word_pos = index + 1
-                            break
-                        # end if
-                    # end for
+            # Write header
+            self._write_positioning_csv(lock, csv_writer, head_row)
 
-                    # Compute positioning
-                    if func == 'linear':
-                        word_positioning = self._linear_positioning(word_pos, word_embeddings.voc_size)
-                        mu = 0
-                    elif func == 'inv':
-                        word_positioning = self._inverse_positioning(word_pos, word_embeddings.voc_size)
-                        mu = math.log(word_embeddings.voc_size) / float(word_embeddings.voc_size)
-                    else:
-                        raise Exception(u"Unknown positioning function")
-                    # end if
+            # Step
+            step = math.ceil(total / nthreads)
 
-                    # Add to total positionings
-                    positionings.append(word_positioning)
+            # Launch each process
+            for start in np.arange(0, total, step):
+                Process(target=self._evalute_positioning, args=(q, lock, csv_writer, word_embeddings, int(start), int(start+step), measure, func)).start()
+            # end for
 
-                    # Row array
-                    row = [word1, word2, word3, response_word, word_pos, word_positioning] + [str(el) for el in predictions[:40]]
+            # Wait for threads
 
-                    # Write to CSV
-                    csv_writer.writerow(row)
-                # end if
-
-                # Total
-                total += 1.0
+            # Get results
+            for num in range(nthreads):
+                positionings.append(q.get(block=True))
             # end for
         # end with
 
-        return np.average(positionings), positionings, float(len(positionings)) / total, scipy.stats.ttest_1samp(positionings, popmean=mu).pvalue
+        # Compute positioning
+        if func == 'linear':
+            mu = 0.0
+        elif func == 'inv':
+            mu = math.log(word_embeddings.voc_size) / float(word_embeddings.voc_size)
+        else:
+            raise Exception(u"Unknown positioning function")
+        # end if
+
+        return np.average(positionings), positionings, float(len(positionings)) / float(
+            len(self._questions_words)), scipy.stats.ttest_1samp(positionings, popmean=mu).pvalue
     # end linear_positioning
 
     # Test several embeddings and compare with t-test
@@ -183,6 +170,89 @@ class QuestionsWords(object):
     ###########################################
     # Private
     ###########################################
+
+    # Write in positioning file
+    def _write_positioning_csv(self, lock, csv_writer, row):
+        """
+        Write in positioning CSV file
+        :param csv_file:
+        :param row:
+        :return:
+        """
+        # Lock
+        lock.acquire()
+
+        # Write to CSV
+        csv_writer.writerow(row)
+
+        # Release
+        lock.release()
+    # end _write_positioning_csv
+
+    # Evaluate positioning
+    def _evalute_positioning(self, queue, lock, csv_writer, word_embeddings, start, end, measure='cosine', func='linear'):
+        """
+        Evaluate positioning
+        :param word_embeddings:
+        :param csv_file:
+        :param measure:
+        :param func:
+        :return:
+        """
+        # Linear positions
+        positionings = list()
+
+        # For each questions-words
+        for (word1, word2, word3, response_word) in self._questions_words[start:end]:
+            # Get all vectors
+            vec1 = word_embeddings[word1]
+            vec2 = word_embeddings[word2]
+            vec3 = word_embeddings[word3]
+            observation = word_embeddings[response_word]
+
+            # No unknown words
+            if vec1 is not None and vec2 is not None and vec3 is not None and observation is not None:
+                # Get nearest word
+                predictions = word_embeddings.similar_words(vec1 - vec2 + vec3, count=word_embeddings.voc_size,
+                                                            measure_func=measure)
+
+                # Find the position
+                for index, (pred_word, pred_measure) in enumerate(predictions):
+                    if pred_word == response_word:
+                        word_pos = index + 1
+                        break
+                        # end if
+                # end for
+
+                # Compute positioning
+                if func == 'linear':
+                    word_positioning = self._linear_positioning(word_pos, word_embeddings.voc_size)
+                elif func == 'inv':
+                    word_positioning = self._inverse_positioning(word_pos, word_embeddings.voc_size)
+                else:
+                    raise Exception(u"Unknown positioning function")
+                # end if
+
+                # Add to total positionings
+                positionings.append(word_positioning)
+
+                # Word row
+                word1_row = u"{} ({})".format(word1, word_embeddings.get(word1, 'count'))
+                word2_row = u"{} ({})".format(word2, word_embeddings.get(word2, 'count'))
+                word3_row = u"{} ({})".format(word3, word_embeddings.get(word3, 'count'))
+                response_word_row = u"{} ({})".format(response_word, word_embeddings.get(response_word, 'count'))
+
+                # Row array
+                row = [word1_row, word2_row, word3_row, response_word_row, word_pos, word_positioning] + [str(el) for el in predictions[:40]]
+
+                # Write to CSV
+                self._write_positioning_csv(lock, csv_writer, row)
+            # end if
+        # end for
+
+        # Return through queue
+        queue.put(positionings)
+    # end _evalute_positioning
 
     # Linear positioning
     def _linear_positioning(self, word_pos, voc_size):
