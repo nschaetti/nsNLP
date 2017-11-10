@@ -72,7 +72,7 @@ class QuestionsWords(object):
     ###########################################
 
     # Test words embeddings with positioning
-    def positioning(self, word_embeddings, csv_file, measure='cosine', func='linear', nthreads=1):
+    def positioning(self, word_embeddings, csv_file, measure='cosine', func='linear', n_threads=1):
         """
         Test words embeddings with linear positioning
         :param word_embeddings:
@@ -102,7 +102,7 @@ class QuestionsWords(object):
             self._write_positioning_csv(lock, csv_writer, head_row)
 
             # Step
-            step = math.ceil(total / nthreads)
+            step = math.ceil(total / n_threads)
 
             # Launch each process
             for start in np.arange(0, total, step):
@@ -112,8 +112,8 @@ class QuestionsWords(object):
             # Wait for threads
 
             # Get results
-            for num in range(nthreads):
-                positionings.append(q.get(block=True))
+            for num in range(n_threads):
+                positionings += q.get(block=True)
             # end for
         # end with
 
