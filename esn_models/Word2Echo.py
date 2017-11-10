@@ -133,10 +133,10 @@ class Word2Echo(object):
             embedding_side_size = 2 if self._direction == 'both' else 1
 
             # Embedding size
-            if self._model == 'word2echo':
+            if self._model == 'echo2word':
                 emb_size = self._output_dim*self._state_gram*embedding_side_size+1
-            elif self._model == 'echo2word':
-                emb_size = self._output_dim*self._state_gram**embedding_side_size*(self._gamma*embedding_side_size+1)
+            elif self._model == 'word2echo':
+                emb_size = (self._output_dim*self._state_gram*embedding_side_size+1)*self._gamma*2
             else:
                 raise Exception(u"Unknown model {}".format(self._model))
             # end if
@@ -145,7 +145,7 @@ class Word2Echo(object):
             emb = Embeddings(size=emb_size)
 
             # For Word2Echo
-            if self._model == 'word2echo':
+            if self._model == 'echo2word':
                 # Add each word with vectors and count
                 for word in self._converter.words():
                     # Word index
@@ -160,7 +160,8 @@ class Word2Echo(object):
                     # Set count
                     emb.set(word, 'count', self._converter.get_word_count(word))
                 # end for
-            elif self._model == 'echo2word':
+            elif self._model == 'word2echo':
+                print(self._readout.beta.shape)
                 # Add each word with vectors and count
                 for word in self._converter.words():
                     # Word index
@@ -189,16 +190,6 @@ class Word2Echo(object):
             return None
         # end if
     # end export_embeddings
-
-    # Import word embeddings
-    def import_embeddings(self, embeddings):
-        """
-        Import embeddings
-        :param embeddings:
-        :return:
-        """
-        pass
-    # end import_embeddings
 
     # Add an example
     def add(self, x):
@@ -246,15 +237,8 @@ class Word2Echo(object):
             data = Word2Echo.data_echo2word(X, Y)
         # end if
 
-        # Parallel or sequencial processing
-        if self._n_threads > 1:
-            # Train the model
-            self._flow.train(data, self._scheduler)
-            self._scheduler.shutdown()
-        else:
-            # Train the model
-            self._flow.train(data)
-        # end if
+        # Train the model
+        self._flow.train(data)
 
         # Trained
         self._trained = True
@@ -282,19 +266,10 @@ class Word2Echo(object):
         # end if
 
         # Flow
-        if self._n_threads == 1:
-            if self._model == 'echo2word':
-                self._flow = mdp.Flow([self._wordecho, self._context, self._readout], verbose=0)
-            else:
-                self._flow = mdp.Flow([self._wordecho, self._readout], verbose=0)
-            # end if
+        if self._model == 'echo2word':
+            self._flow = mdp.Flow([self._wordecho, self._context, self._readout], verbose=0)
         else:
-            if self._model == 'echo2word':
-                self._flow = mdp.parallel.ParallelFlow([self._wordecho, self._context, self._readout], verbose=1)
-            else:
-                self._flow = mdp.parallel.ParallelFlow([self._wordecho, self._readout], verbose=1)
-            # end if
-            self._scheduler = mdp.parallel.ThreadScheduler(n_threads=self._n_threads, verbose=True, copy_callable=False)
+            self._flow = mdp.Flow([self._wordecho, self._readout], verbose=0)
         # end if
     # end reset_model
 
@@ -310,22 +285,22 @@ class Word2Echo(object):
         :return:
         """
         # Side outputs size
-        side_size = int(self._output_dim * self._gamma)
+        side_size = int(self._input_dim * self._gamma)
 
         # Output matrix
         y = scipy.sparse.csr_matrix((x.shape[0], side_size * 2))
 
         # Zero inputs
-        zero_inputs = scipy.sparse.csr_matrix(side_size)
+        zero_inputs = scipy.sparse.csr_matrix((1, side_size))
 
         # For each token in inputs
         for i in np.arange(0, x.shape[0]):
             # Current inputs
-            current_inputs = scipy.sparse.csr_matrix(side_size * 2)
+            current_inputs = scipy.sparse.csr_matrix((1, side_size * 2))
 
             # Before inputs
             if i == 0:
-                current_inputs[:side_size] = zero_inputs
+                current_inputs[0, :side_size] = zero_inputs
             else:
                 # Start, end indexes
                 start = i - self._gamma
@@ -337,30 +312,32 @@ class Word2Echo(object):
                 # end if
 
                 # Temporary inputs
-                tmp_inputs = y[start:end, :].flatten()
+                tmp_inputs = x[start:end, :].tolil()
+                tmp_inputs.reshape((1, tmp_inputs.shape[0]*tmp_inputs.shape[1]))
 
                 # Set
-                current_inputs[side_size - tmp_inputs.shape[0]:side_size] = tmp_inputs
+                current_inputs[0, side_size - tmp_inputs.shape[1]:side_size] = tmp_inputs
             # end if
 
             # After inputs
             if i == x.shape[0] - 1:
-                current_inputs[side_size:] = zero_inputs
+                current_inputs[0, side_size:] = zero_inputs
             else:
                 # Start, end indexes
                 start = i+1
                 end = i+1+self._gamma
 
                 # Limits
-                if end > y.shape[0]:
-                    end = y.shape[0] + 1
+                if end > x.shape[0]:
+                    end = x.shape[0]
                 # end if
 
                 # Temporary inputs
-                tmp_inputs = y[start:end, :].flatten()
+                tmp_inputs = x[start:end, :].tolil()
+                tmp_inputs.reshape((1, tmp_inputs.shape[0]*tmp_inputs.shape[1]))
 
                 # Get
-                current_inputs[side_size:side_size+tmp_inputs.shape[0]] = y[start:end, :]
+                current_inputs[0, side_size:side_size+tmp_inputs.shape[1]] = tmp_inputs
             # end if
 
             # Set in y
