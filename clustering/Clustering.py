@@ -5,6 +5,8 @@
 # Imports
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import sklearn.cluster
+import networkx as nx
 
 
 # Clustering tool
@@ -19,7 +21,7 @@ class Clutering(object):
         Constructor
         """
         # Variables
-        self._samples= list()
+        self._samples = list()
         self._sample_vectors = dict()
         self._distance_matrix = np.array([])
         self._text2index = dict()
@@ -56,6 +58,9 @@ class Clutering(object):
 
         # Inc
         self._n_texts += 1
+
+        # Distance again
+        self._distance_measured = False
     # end add
 
     # Update a sample
@@ -73,28 +78,148 @@ class Clutering(object):
 
         # Update vector
         self._sample_vectors[sample] = vector
+
+        # Distance again
+        self._distance_measured = False
     # end update
 
-    # Clusters
-    def clusters(self, measure='cosine'):
+    # Compute clusters with K-Means
+    def k_means(self, k, random_state=0):
         """
-        Cluster
+        Compute clusters with K-Means
+        :param k:
+        :return:
+        """
+        # Array of vectors
+        X = np.array([])
+
+        # Create clusters
+        clusters = [list() for i in range(k)]
+
+        # Add each sample vector
+        for sample in self._samples:
+            X = np.vstack((X, self._sample_vectors[sample]))
+        # end for
+
+        # Do K-means clustering
+        kmeans = sklearn.cluster.KMeans(n_clusters=k, random_state=random_state).fit(X)
+
+        # For each labels
+        for i in kmeans.labels_.shape[0]:
+            # Label
+            label = kmeans.labels_[i]
+
+            # Sample
+            sample = self._samples[i]
+
+            # Add sample
+            clusters[label].append(sample)
+        # end for
+
+        return clusters
+    # end cluster
+
+    # Compute clusters with adaptive threshold
+    def adaptive_threshold(self, measure='cosine'):
+        """
+        Compute clusters with adaptive threshold
         :param measure:
         :return:
         """
-        # Compute distance matrix
+        # Compute distance if necessary
         self._compute_distance_matrix(measure=measure)
-    # end cluster
+
+        # List of edges
+        edges = list()
+
+        # Average and std
+        avg = np.average(self._distance_matrix)
+        std = np.std(self._distance_matrix)
+
+        # Threshold
+        threshold = avg + std*2.0
+
+        # For each tuple of samples
+        for i, s1 in enumerate(self._samples):
+            for j, s2 in enumerate(self._samples):
+                if s1 != s2:
+                    # Pass threshold
+                    if measure == 'cosine' and self._distance_matrix[i, j] > threshold:
+                        edges.append((i, j))
+                    elif self._distance_matrix[i, j] < threshold:
+                        edges.append((i, j))
+                    # end if
+                # end if
+            # end for
+        # end for
+
+        # New graph
+        G = nx.Graph()
+
+        # Add edges
+        G.add_edges_from(edges)
+
+        # Set of connected components
+        connected_components = list(nx.connected_components(G))
+
+        # Clusters
+        clusters = [list() for i in range(len(connected_components))]
+
+        # Add sample to each cluster
+        for index, c in enumerate(connected_components):
+            for e in c:
+                # Sample
+                sample = self._samples[e]
+
+                # Add
+                self._clusters[index].append(sample)
+            # end for
+        # end for
+
+        return clusters
+    # end adaptive_threshold
 
     # Get distance list
-    def get_distance_list(self, sorted=False):
+    def get_distance_list(self, measure='cosine', sort=False):
         """
         Get distance list
-        :param sorted:
+        :param measure:
+        :param sort:
         :return:
         """
+        # Compute distance matrix, if necessary
+        if not self._distance_measured:
+            self._compute_distance_matrix(measure=measure)
+        # end if
+
         # List of distance
-        pass
+        distance_list = list()
+
+        # For each combination of sample
+        for i in range(len(self._samples)):
+            for j in range(len(self._samples)):
+                if i != j:
+                    # Samples
+                    s1 = self._samples[i]
+                    s2 = self._samples[j]
+
+                    # Only samples
+                    sample_list = ((e[0], e[1]) for e in distance_list)
+
+                    # Not already in list
+                    if (s1, s2) and (s2, s1) not in sample_list:
+                        distance_list.append((s1, s2, self._distance_matrix[i, j]))
+                    # end if
+                # end if
+            # end for
+        # end for
+
+        # Sort?
+        if sort:
+            distance_list = distance_list.sort(key=lambda x: x[2])
+        # end if
+
+        return distance_list
     # end
 
     ########################################
