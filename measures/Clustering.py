@@ -14,5 +14,14 @@ class Clustering(object):
     #################################
 
     # B-cubed F-1
+    @staticmethod
+    def bcubed_f1(clusters):
+        """
+        B-cubed F-1
+        :param clusters:
+        :return:
+        """
+        pass
+    # end bcubed_f1
 
 # end Clustering
