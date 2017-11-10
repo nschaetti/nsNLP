@@ -111,6 +111,21 @@ class Corpus(object):
         return self.get_author(author_name).get_texts()
     # end get_author_texts
 
+    # Get text by title
+    def get_by_title(self, title):
+        """
+        Get text by title
+        :param title:
+        :return:
+        """
+        for text in self._texts:
+            if text.get_title() == title:
+                return text
+            # end if
+        # end for
+        return None
+    # end get_by_title
+
     ########################################
     # Override
     ########################################
