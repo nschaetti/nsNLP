@@ -97,15 +97,19 @@ class Clutering(object):
         clusters = [list() for i in range(k)]
 
         # Add each sample vector
-        for sample in self._samples:
-            X = np.vstack((X, self._sample_vectors[sample]))
+        for index, sample in enumerate(self._samples):
+            if index == 0:
+                X = self._sample_vectors[sample]
+            else:
+                X = np.vstack((X, self._sample_vectors[sample]))
+            # end if
         # end for
 
         # Do K-means clustering
         kmeans = sklearn.cluster.KMeans(n_clusters=k, random_state=random_state).fit(X)
 
         # For each labels
-        for i in kmeans.labels_.shape[0]:
+        for i in range(kmeans.labels_.shape[0]):
             # Label
             label = kmeans.labels_[i]
 
