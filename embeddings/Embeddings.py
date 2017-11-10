@@ -373,13 +373,23 @@ class Embeddings(object):
         mean_x = np.average(reduced_matrix[:, 0])
         mean_y = np.average(reduced_matrix[:, 1])
 
+        # Min
+        min_x = np.min(reduced_matrix[:, 0])
+        min_y = np.min(reduced_matrix[:, 1])
+
+        # Max
+        max_x = np.max(reduced_matrix[:, 0])
+        max_y = np.max(reduced_matrix[:, 1])
+
         # Std
-        std_x = np.std(reduced_matrix[:, 0]) * 0.25
-        std_y = np.std(reduced_matrix[:, 1]) * 0.25
+        #std_x = np.std(reduced_matrix[:, 0]) * 0.25
+        #std_y = np.std(reduced_matrix[:, 1]) * 0.25
 
         # Limits
-        plt.xlim((mean_x - std_x, mean_x + std_x))
-        plt.ylim((mean_y - std_y, mean_y + std_y))
+        plt.xlim((min_x, max_x))
+        plt.ylim((min_y, max_y))
+        #plt.xlim((mean_x - std_x, mean_x + std_x))
+        #plt.ylim((mean_y - std_y, mean_y + std_y))
 
         # Plot each words
         for word_text in selected_word_indexes.keys():
