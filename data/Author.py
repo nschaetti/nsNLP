@@ -27,6 +27,7 @@ class Author(object):
         self._dataset_path = dataset_path
         self._name = name
         self._texts = list()
+        self._truths = dict()
 
         # Load
         self._load()
@@ -63,6 +64,20 @@ class Author(object):
         return len(self._texts)
     # end get_n_texts
 
+    # Get truth
+    def truth(self, property):
+        """
+        Get truth
+        :param property:
+        :return:
+        """
+        try:
+            return self._author_truths[property]
+        except KeyError:
+            return None
+        # end try
+    # end truth
+
     ############################################
     # Override
     ############################################
@@ -97,6 +112,9 @@ class Author(object):
         """
         # Author info
         author_texts = json.load(open(os.path.join(self._dataset_path, "authors.json"), 'r'))[self._name]
+
+        # Author properties
+        self._author_truths = json.load(open(os.path.join(self._dataset_path, "truth.json"), 'r'))[self._name]
 
         # For each texts
         for index, author_text in enumerate(author_texts):
