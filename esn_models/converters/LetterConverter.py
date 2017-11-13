@@ -25,6 +25,7 @@
 # Imports
 import numpy as np
 from Converter import Converter
+import scipy.sparse
 
 
 # Converter from letter to symbols
@@ -34,15 +35,25 @@ class LetterConverter(Converter):
     """
 
     # Constructor
-    def __init__(self, tag_to_symbol=None, resize=-1, pca_model=None, fill_in=False):
+    def __init__(self, alphabet, tag_to_symbol=None, resize=-1, pca_model=None, fill_in=False):
         """
         Constructor
+        :param alphabet:
+        :param unknown:
         :param lang: Language model
         :param tag_to_symbol: Tag to symbol conversion array.
         :param resize: Reduce dimensionality.
         """
         super(LetterConverter, self).__init__(tag_to_symbol, resize, pca_model)
+        self._alphabet = alphabet
         self._fill_in = fill_in
+        self._n_chars = len(alphabet) + 1
+
+        # Letter to index
+        self._char2index = dict()
+        for index, c in enumerate(alphabet):
+            self._char2index[c] = index
+        # end for
     # end __init__
 
     ##############################################
@@ -55,8 +66,9 @@ class LetterConverter(Converter):
         Get tags.
         :return: A tag list.
         """
-        return [u' ', u'a', u'b', u'c', u'd', u'e', u'f', u'g', u'h', u'i', u'j', u'k', u'l', u'm', u'n', u'o', u'p',
-                u'q', u'r', u's', u't', u'u', u'v', u'w', u'x', u'y', u'z', u'.', u',', u';', u'-', u'!', u'?']
+        return self._alphabet
+        #return [u' ', u'a', u'b', u'c', u'd', u'e', u'f', u'g', u'h', u'i', u'j', u'k', u'l', u'm', u'n', u'o', u'p',
+        #        u'q', u'r', u's', u't', u'u', u'v', u'w', u'x', u'y', u'z', u'.', u',', u';', u'-', u'!', u'?']
     # end get_tags
 
     ##############################################
@@ -70,30 +82,23 @@ class LetterConverter(Converter):
         :param text: The text to convert.
         :return: An numpy array of inputs.
         """
-        # Resulting numpy array
-        doc_array = np.array([])
-
-        # Null symbol
-        null_symbol = np.zeros((1, len(self.get_tags())))
+        # Resulting sparse matrix
+        doc_array = scipy.sparse.csr_matrix((len(text), self._n_chars))
 
         # For each letter
-        init = False
-        for index, letter in enumerate(text):
-            sym = self.tag_to_symbol(letter)
-            if sym is None and self._fill_in:
-                sym = null_symbol
-            # end if
-            if sym is not None:
-                if not init:
-                    doc_array = sym
-                    init = True
-                else:
-                    doc_array = np.vstack((doc_array, sym))
-                    # end if
-                    # end if
+        for pos, letter in enumerate(text):
+            # Try to get char
+            try:
+                index = self._char2index[letter]
+            except KeyError:
+                index = -1
+            # end try
+
+            # Set input
+            doc_array[pos, index] = 1.0
         # end for
 
-        return self.reduce(doc_array)
+        return doc_array
     # end convert
 
     ##############################################
