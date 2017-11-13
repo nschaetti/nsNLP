@@ -175,11 +175,17 @@ class NaiveBayesClassifier(TextClassifier):
             # end try
 
             # Add class prob
-            self._p_c[c] += token_count
+            #self._p_c[c] += token_count
 
             # Add total token count
             self._n_tokens += token_count
         # end for
+
+        # One more sample
+        self._n_samples += 1.0
+
+        # Class prob
+        self._p_c[c] += 1.0
 
         return True
     # end _train
@@ -193,7 +199,8 @@ class NaiveBayesClassifier(TextClassifier):
         # Finalize P(Fi = fi)
         for c in self._classes:
             # Classes probs
-            self._p_c[c] /= self._n_tokens
+            #self._p_c[c] /= self._n_tokens
+            self._p_c[c] /= self._n_samples
 
             # For each tokens
             for token in self._p_fi_c[c]:
@@ -255,11 +262,23 @@ class NaiveBayesClassifier(TextClassifier):
             # end for
         # end for
 
+        # Multiply by class probability
+        sum = decimal.Decimal(0.0)
+        for c in self._classes:
+            classes_probabilities[c] *= decimal.Decimal(self._p_c[c])
+            sum += decimal.Decimal(classes_probabilities[c])
+        # end for
+
+        # Normalize
+        for c in self._classes:
+            classes_probabilities[c] /= sum
+        # end for
+
         # Get max
         max = decimal.Decimal(0.0)
         max_class = None
         for c in self._classes:
-            c_probs = decimal.Decimal(self._p_c[c]) * classes_probabilities[c]
+            c_probs = classes_probabilities[c]
             if c_probs > max:
                 max = c_probs
                 max_class = c
@@ -300,6 +319,9 @@ class NaiveBayesClassifier(TextClassifier):
 
         # Total count
         self._n_tokens = 0
+
+        # Sample counter
+        self._n_samples = 0.0
     # end _init
 
     ##############################################
