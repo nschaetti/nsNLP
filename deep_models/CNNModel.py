@@ -38,7 +38,7 @@ class CNNModel(TextClassifier):
 
         :param classes:
         """
-        super(CNNModel, self).__init__()
+        super(CNNModel, self).__init__(classes=classes)
         self._classes = classes
         self._log_interval = log_interval
         #self._model = ConvNet()
