@@ -114,7 +114,9 @@ class Author(object):
         author_texts = json.load(open(os.path.join(self._dataset_path, "authors.json"), 'r'))[self._name]
 
         # Author properties
-        self._author_truths = json.load(open(os.path.join(self._dataset_path, "truth.json"), 'r'))[self._name]
+        if os.path.exists(os.path.join(self._dataset_path, "truth.json")):
+            self._author_truths = json.load(open(os.path.join(self._dataset_path, "truth.json"), 'r'))[self._name]
+        # end if
 
         # For each texts
         for index, author_text in enumerate(author_texts):
