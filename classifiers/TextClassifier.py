@@ -38,7 +38,7 @@ class TextClassifier(object):
     _training_finalized = False
 
     # Constructor
-    def __init__(self, classes, lang='en_core_web_md'):
+    def __init__(self, classes):
         """
         Constructor
         :param classes: Classes
@@ -47,7 +47,6 @@ class TextClassifier(object):
         # Properties
         self._classes = classes
         self._n_classes = len(classes)
-        self._lang = lang
     # end __init__
 
     ##############################################
