@@ -10,7 +10,8 @@
 import classifiers
 import clustering
 import data
-# import deep_models
+import deep_models
+import deep_models.modules
 import embeddings
 import esn_models
 import esn_models.converters
