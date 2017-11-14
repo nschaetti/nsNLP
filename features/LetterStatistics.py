@@ -23,7 +23,6 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 import matplotlib.pyplot as plt
-import torch
 
 
 # Letter statistics
@@ -33,14 +32,13 @@ class LetterStatistics(object):
     """
 
     # Constructor
-    def __init__(self, text, alphabet, punc):
+    def __init__(self, alphabet, punc):
         """
         Constructor
         :param text:
         """
         self._alphabet = alphabet
         self._punc = punc
-        self._text = text
     # end __init__
 
     #########################################
@@ -48,14 +46,14 @@ class LetterStatistics(object):
     #########################################
 
     # Get punctuation
-    def get_punctuation(self, to_one=False):
+    def get_punctuation(self, text, to_one=False):
         """
         Get punctuation
         :param to_one: To 0-1
         :return:
         """
         # Cleaned text
-        cleaned_text = self._clean_text(self._text)
+        cleaned_text = self._clean_text(text)
 
         # Total
         total = 0.0
@@ -82,18 +80,18 @@ class LetterStatistics(object):
     # end get_punctutation
 
     # Get beginning letters
-    def get_beginning_letters(self, uppercase=True, to_one=False):
+    def get_beginning_letters(self, text, uppercase=True, to_one=False):
         """
         Get beginning letters
         :param uppercase:
         :param to_one: To 0-1
         :return:
         """
-        return self._get_positional_letters(0, uppercase=uppercase, to_one=to_one)
+        return self._get_positional_letters(text, 0, uppercase=uppercase, to_one=to_one)
     # end get_beginning_letters
 
     # Get ending letters
-    def get_ending_letters(self, uppercase=True, to_one=False):
+    def get_ending_letters(self, text, uppercase=True, to_one=False):
         """
         Get beginning letters
         :param uppercase:
@@ -104,7 +102,7 @@ class LetterStatistics(object):
     # end get_beginning_letters
 
     # Get beginning 2grams
-    def get_beginning_2grams(self, uppercase=True, to_one=False):
+    def get_beginning_2grams(self, text, uppercase=True, to_one=False):
         """
         Get beggining 2grams
         :param uppercase:
@@ -115,7 +113,7 @@ class LetterStatistics(object):
     # end get_beginning_2grams
 
     # Get ending 2grams
-    def get_ending_2grams(self, uppercase=True, to_one=False):
+    def get_ending_2grams(self, text, uppercase=True, to_one=False):
         """
         Get beggining 2grams
         :param uppercase:
@@ -126,7 +124,7 @@ class LetterStatistics(object):
     # end get_ending_2grams
 
     # Get 3-grams
-    def get_3grams(self, uppercase=True, to_one=False):
+    def get_3grams(self, text, uppercase=True, to_one=False):
         """
         Get 3-grams
         :param uppercase:
@@ -175,7 +173,7 @@ class LetterStatistics(object):
     # end get_3grams
 
     # Get 2-grams
-    def get_2grams(self, uppercase=True, to_one=False):
+    def get_2grams(self, text, uppercase=True, to_one=False):
         """
         Get 2-grams
         :param uppercase:
@@ -224,7 +222,7 @@ class LetterStatistics(object):
     # end get_2grams
 
     # Get letters
-    def get_letter_frequencies(self, uppercase=True, to_one=False):
+    def get_letter_frequencies(self, text, uppercase=True, to_one=False):
         """
         Get letters
         :param uppercase:
@@ -271,16 +269,16 @@ class LetterStatistics(object):
     #########################################
 
     # Call
-    def __call__(self, uppercase=False, to_one=False):
+    def __call__(self, text, uppercase=False, to_one=False):
         """
         Call
         :return:
         """
         # Get statistics
         grams_stats = dict()
-        grams_stats['grams'] = self.get_2grams(uppercase=uppercase, to_one=to_one)
-        grams_stats['first_grams'] = self.get_beginning_2grams(uppercase=uppercase, to_one=to_one)
-        grams_stats['end_grams'] = self.get_ending_2grams(uppercase=uppercase, to_one=to_one)
+        grams_stats['grams'] = self.get_2grams(text, uppercase=uppercase, to_one=to_one)
+        grams_stats['first_grams'] = self.get_beginning_2grams(text, uppercase=uppercase, to_one=to_one)
+        grams_stats['end_grams'] = self.get_ending_2grams(text, uppercase=uppercase, to_one=to_one)
         grams_stats['punctuations'] = self.get_punctuation(to_one=to_one)
         return grams_stats
     # end __call__
