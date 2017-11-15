@@ -22,6 +22,8 @@
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+import torch.utils
+import torch.utils.data
 from torch.autograd import Variable
 from nsNLP.classifiers.TextClassifier import TextClassifier
 
@@ -33,7 +35,7 @@ class CNNModel(TextClassifier):
     """
 
     # Constructor
-    def __init__(self, model, classes=[], cuda=False, lr=0.01, momentum=0.5, log_interval=10, seed=1):
+    def __init__(self, model, classes=[], cuda=False, lr=0.01, momentum=0.5, log_interval=10, seed=1, double=False):
         """
 
         :param classes:
@@ -46,7 +48,10 @@ class CNNModel(TextClassifier):
         self._cuda = cuda
         if cuda:
             self._model.cuda()
-        self._model.double()
+        # end if
+        if double:
+            self._model.double()
+        # end if
         torch.manual_seed(seed)
         if cuda:
             torch.cuda.manual_seed(seed)
@@ -144,7 +149,7 @@ class CNNModel(TextClassifier):
         training_loss /= len(train_loader)
 
         # Print & return
-        print("Iteration {}: Training Loss: {:.4f}".format(epoch, training_loss))
+        print(u"Iteration {}: Training Loss: {:.4f}".format(epoch, training_loss))
         return training_loss
     # end train
 
