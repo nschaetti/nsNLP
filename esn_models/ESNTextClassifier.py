@@ -101,6 +101,7 @@ class ESNTextClassifier(TextClassifier):
         # Components
         self._readout = None
         self._join = None
+        self._last = None
         self._flow = None
 
         # Reset state at each call
@@ -238,8 +239,18 @@ class ESNTextClassifier(TextClassifier):
             if verbose:
                 print(self._converter)
             # end if
+
+            # Add inputs
             X.append(x)
-            Y.append(y)
+
+            # Add outputs
+            if self._state_gram == -1:
+                Y.append(y[-1])
+            else:
+                Y.append(y)
+            # end if
+
+            # Token per classes
             self._author_token_count[author_index] += x.shape[0]
         # end for
 
@@ -333,6 +344,8 @@ class ESNTextClassifier(TextClassifier):
         del self._readout, self._flow
 
         # Delete joiner if needed
+        if self._state_gram > -1:
+            del self._last
         if self._state_gram > 1:
             del self._join
         # end if
@@ -341,7 +354,10 @@ class ESNTextClassifier(TextClassifier):
         self._readout = Oger.nodes.RidgeRegressionNode()
 
         # Flow
-        if self._state_gram == 1:
+        if self._state_gram == -1:
+            self._last = Oger.nodes.LastStateNode(input_dim=self._output_dim)
+            self._flow = mdp.Flow([self._reservoir, self._last, self._readout], verbose=0)
+        elif self._state_gram == 1:
             self._flow = mdp.Flow([self._reservoir, self._readout], verbose=0)
         else:
             self._join = Oger.nodes.JoinedStatesNode(input_dim=self._output_dim, joined_size=self._state_gram)
