@@ -53,10 +53,10 @@ class ConvNet3D(nn.Module):
         self.conv2_drop = nn.Dropout3d()
 
         # Linear transformation with 4800 inputs features and 50 output features
-        self.fc1 = nn.Linear(channels[3], channels[4])
+        self.fc1 = nn.Linear(channels[5], channels[6])
 
         # Linear transformation with 50 inputs features and 2 output features
-        self.fc2 = nn.Linear(channels[4], n_classes)
+        self.fc2 = nn.Linear(channels[6], n_classes)
     # end __init__
 
     ##############################################

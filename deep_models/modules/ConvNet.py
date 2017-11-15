@@ -47,16 +47,16 @@ class ConvNet(nn.Module):
         self.conv1 = nn.Conv2d(channels[0], channels[1], kernel_size=kernel_size, stride=stride)
 
         # 2D convolution layer, 10 input channels, 20 output channels (filters), kernel size 5
-        self.conv2 = nn.Conv2d(channels[1], channels[2], kernel_size=kernel_size)
+        self.conv2 = nn.Conv2d(channels[1], channels[3], kernel_size=kernel_size)
 
         # 2D Dropout layer, with probability of an element to be zeroed to 0.5
         self.conv2_drop = nn.Dropout2d()
 
         # Linear transformation with 4800 inputs features and 50 output features
-        self.fc1 = nn.Linear(channels[3], channels[4])
+        self.fc1 = nn.Linear(channels[5], channels[6])
 
         # Linear transformation with 50 inputs features and 2 output features
-        self.fc2 = nn.Linear(channels[4], n_classes)
+        self.fc2 = nn.Linear(channels[6], n_classes)
     # end __init__
 
     ##############################################
