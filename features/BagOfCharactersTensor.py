@@ -63,11 +63,11 @@ class BagOfCharactersTensor(object):
         # Tensor
         gram_tensor = None
         if self._n_gram == 1:
-            gram_tensor = torch.zeros(self._n_chars)
+            gram_tensor = torch.zeros(1, self._n_chars)
         elif self._n_gram == 2:
-            gram_tensor = torch.zeros(self._n_chars, self._n_chars + 1)
+            gram_tensor = torch.zeros(1, self._n_chars, self._n_chars + 1)
         elif self._n_gram == 3:
-            gram_tensor = torch.zeros(self._n_chars, self._n_chars + 1, self._n_chars + 1)
+            gram_tensor = torch.zeros(1, self._n_chars, self._n_chars + 1, self._n_chars + 1)
         # end if
 
         # Compute 1 gram
@@ -111,11 +111,11 @@ class BagOfCharactersTensor(object):
 
             # Set
             if self._n_gram == 1:
-                tensor[char_index] += 1.0
+                tensor[0, char_index] += 1.0
             elif self._n_gram == 2:
-                tensor[char_index, 0] += 1.0
+                tensor[0, char_index, 0] += 1.0
             elif self._n_gram == 3:
-                tensor[char_index, 0, 0] += 1.0
+                tensor[0, char_index, 0, 0] += 1.0
             # end if
             total += 1.0
         # end for
@@ -125,9 +125,9 @@ class BagOfCharactersTensor(object):
             if self._n_gram == 1:
                 tensor /= total
             elif self._n_gram == 2:
-                tensor[:, 0] /= total
+                tensor[0, :, 0] /= total
             elif self._n_gram == 3:
-                tensor[:, 0, 0] /= total
+                tensor[0, :, 0, 0] /= total
             # end if
         # end if
     # end _compute_1gram
@@ -158,9 +158,9 @@ class BagOfCharactersTensor(object):
 
             # Set
             if self._n_gram == 2:
-                tensor[char_index1, char_index2] += 1.0
+                tensor[0, char_index1, char_index2] += 1.0
             elif self._n_gram == 3:
-                tensor[char_index1, char_index2, 0] += 1.0
+                tensor[0, 0, char_index1, char_index2, 0] += 1.0
             # end if
 
             total += 1.0
@@ -169,9 +169,9 @@ class BagOfCharactersTensor(object):
         # Normalize
         if normalize:
             if self._n_gram == 2:
-                tensor[:, 1:] /= total
+                tensor[0, :, 1:] /= total
             elif self._n_gram == 3:
-                tensor[:, 1:, 0] /= total
+                tensor[0, :, 1:, 0] /= total
             # end if
         # end if
     # end _compute_2gram
@@ -203,14 +203,14 @@ class BagOfCharactersTensor(object):
             char_index3 = char_index3 + 1 if char_index3 != -1 else -1
 
             # Set
-            tensor[char_index1, char_index2, char_index3] += 1.0
+            tensor[0, char_index1, char_index2, char_index3] += 1.0
 
             total += 1.0
         # end for
 
         # Normalize
         if normalize:
-            tensor[:, 1:, 1:] /= total
+            tensor[0, :, 1:, 1:] /= total
         # end if
     # end _compute_3gram
 
