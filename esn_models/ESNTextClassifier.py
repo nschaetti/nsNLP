@@ -39,6 +39,7 @@ from converters.TagConverter import TagConverter
 from converters.WVConverter import WVConverter
 from converters.FuncWordConverter import FuncWordConverter
 from converters.OneHotConverter import OneHotConverter
+from converters.LetterConverter import LetterConverter
 import converters.JoinConverter
 
 
@@ -419,7 +420,7 @@ class ESNTextClassifier(TextClassifier):
     @staticmethod
     def create(classes, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
                rc_w_sparsity, converters_desc, w=None, voc_size=10000, uppercase=False,
-               use_sparse_matrix=False, aggregation='average', pca_path="", state_gram=1, parallel=False):
+               use_sparse_matrix=False, aggregation='average', pca_path="", state_gram=1, parallel=False, alphabet=u""):
         """
         Constructor
         :param classes: Possible classes
@@ -466,6 +467,8 @@ class ESNTextClassifier(TextClassifier):
                 converter = WVConverter(pca_model=pca_model, fill_in=joined_converters)
             elif converter_type == "oh":
                 converter = OneHotConverter(voc_size=voc_size, uppercase=uppercase)
+            elif converter_type == "ch":
+                converter = LetterConverter(alphabet=alphabet)
             else:
                 raise Exception(u"Unknown converter type {}".format(converter_desc))
             # end if
