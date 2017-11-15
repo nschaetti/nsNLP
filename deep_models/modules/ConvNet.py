@@ -31,7 +31,7 @@ class ConvNet(nn.Module):
     """
 
     # Constructor
-    def __init__(self, n_classes=2, params=(4800, 400)):
+    def __init__(self, n_classes=2, channels=(1, 10, 2, 20, 2, 4800, 50), kernel_size=5, stride=1):
         """
 
         :param n_classes:
@@ -39,20 +39,24 @@ class ConvNet(nn.Module):
         """
         super(ConvNet, self).__init__()
 
+        # Max pooling size
+        self._max_pool1_size = channels[2]
+        self._max_pool2_size = channels[4]
+
         # 2D convolution layer, 1 in channel, 10 out channels (filters), kernel size 5
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5, stride=1)
+        self.conv1 = nn.Conv2d(channels[0], channels[1], kernel_size=kernel_size, stride=stride)
 
         # 2D convolution layer, 10 input channels, 20 output channels (filters), kernel size 5
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
+        self.conv2 = nn.Conv2d(channels[1], channels[2], kernel_size=kernel_size)
 
         # 2D Dropout layer, with probability of an element to be zeroed to 0.5
         self.conv2_drop = nn.Dropout2d()
 
         # Linear transformation with 4800 inputs features and 50 output features
-        self.fc1 = nn.Linear(params[0], params[1])
+        self.fc1 = nn.Linear(channels[3], channels[4])
 
         # Linear transformation with 50 inputs features and 2 output features
-        self.fc2 = nn.Linear(params[1], n_classes)
+        self.fc2 = nn.Linear(channels[4], n_classes)
     # end __init__
 
     ##############################################
@@ -68,11 +72,11 @@ class ConvNet(nn.Module):
         """
         # ReLU << Max pooling 2D with kernel size 2 << Convolution layer 1 << x
         x = self.conv1(x)
-        x = F.max_pool2d(x, 2)
+        x = F.max_pool2d(x, self._max_pool1_size)
         x = F.relu(x)
 
         # ReLU << Max pooling 2D with kernel size 2 << Dropout 2D << Convolution layer 2 << x
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), self._max_pool2_size))
 
         # Put all 320 features into 1D line << x
         x = x.view(-1, ConvNet.num_flat_features(x))
