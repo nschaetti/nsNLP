@@ -345,8 +345,6 @@ class ESNTextClassifier(TextClassifier):
         del self._readout, self._flow
 
         # Delete joiner if needed
-        if self._state_gram > -1:
-            del self._last
         if self._state_gram > 1:
             del self._join
         # end if
