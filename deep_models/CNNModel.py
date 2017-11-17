@@ -121,6 +121,7 @@ class CNNModel(TextClassifier):
 
         # For each batch
         for batch_idx, (data, target) in enumerate(train_loader):
+            #print(data)
             # Create variables
             if self._cuda:
                 data, target = data.cuda(), target.cuda()
@@ -149,7 +150,7 @@ class CNNModel(TextClassifier):
         training_loss /= len(train_loader)
 
         # Print & return
-        print(u"Iteration {}: Training Loss: {:.4f}".format(epoch, training_loss))
+        #print(u"Iteration {}: Training Loss: {:.4f}".format(epoch, training_loss))
         return training_loss
     # end train
 
@@ -186,7 +187,7 @@ class CNNModel(TextClassifier):
 
             # Get the index of the max log-probability
             pred = output.data.max(1)[1]
-
+            #print(pred)
             # Add if correct
             correct += pred.eq(target.data).cpu().sum()
         # end for
@@ -200,7 +201,7 @@ class CNNModel(TextClassifier):
             epoch, test_loss, correct, len(test_loader.dataset),
             100.0 * float(correct) / float(len(test_loader.dataset))
         ))"""
-        print("Iteration {}: Test Loss: {:.4f}".format(epoch, test_loss))
+        #print("Iteration {}: Test Loss: {:.4f}".format(epoch, test_loss))
         return 100.0 * float(correct) / float(len(test_loader.dataset)), test_loss
     # end evaluate_doc
 
