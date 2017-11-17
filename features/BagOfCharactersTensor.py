@@ -21,6 +21,7 @@
 
 # Import packages
 import torch
+import matplotlib.pyplot as plt
 
 
 # Bag of characters tensor
@@ -88,21 +89,21 @@ class BagOfCharactersTensor(object):
         # end if
 
         # Compute 1 gram
-        self._compute_1gram(gram_tensor, text, normalize)
+        gram_tensor = self._compute_1gram(gram_tensor, text, normalize)
 
         # Compute 2 gram
         if self._n_gram >= 2:
-            self._compute_2gram(gram_tensor, text, normalize)
+            gram_tensor = self._compute_2gram(gram_tensor, text, normalize)
         # end if
 
         # Compute 3 gram
         if self._n_gram == 3:
-            self._compute_3gram(gram_tensor, text, normalize)
+            gram_tensor = self._compute_3gram(gram_tensor, text, normalize)
         # end if
 
         # Start characters
         if self._start_grams:
-            self._compute_position_1gram(gram_tensor, text, 'start', self._n_chars, normalize)
+            gram_tensor = self._compute_position_1gram(gram_tensor, text, 'start', self._n_chars, normalize)
         # end if
 
         # Start 2-grams
@@ -160,6 +161,11 @@ class BagOfCharactersTensor(object):
             # Index
             char_index = self._get_char_index(gram)
 
+            # Not found
+            if char_index == -1:
+                char_index = self._n_chars - 1
+            # end if
+
             # Set
             if self._n_gram == 1:
                 tensor[0, char_index] += 1.0
@@ -176,15 +182,17 @@ class BagOfCharactersTensor(object):
             if self._n_gram == 1:
                 tensor /= total
             elif self._n_gram == 2:
-                tensor[0, :, 0] /= total
-                tensor[0, :, 0] /= tensor[0, :, 0].max()
-                tensor[0, :, 0] *= self._multi
+                tensor[0, :self._n_chars, 0] /= total
+                tensor[0, :self._n_chars, 0] /= tensor[0, :, 0].max()
+                tensor[0, :self._n_chars, 0] *= self._multi
             elif self._n_gram == 3:
-                tensor[0, :, 0, 0] /= total
-                tensor[0, :, 0, 0] /= tensor[0, :, 0, 0].max()
-                tensor[0, :, 0, 0] *= self._multi
+                tensor[0, :self._n_chars, 0, 0] /= total
+                tensor[0, :self._n_chars, 0, 0] /= tensor[0, :, 0, 0].max()
+                tensor[0, :self._n_chars, 0, 0] *= self._multi
             # end if
         # end if
+
+        return tensor
     # end _compute_1gram
 
     # Compute 2-gram values
@@ -208,6 +216,11 @@ class BagOfCharactersTensor(object):
             char_index1 = self._get_char_index(gram[0])
             char_index2 = self._get_char_index(gram[1])
 
+            # Not found
+            if char_index1 == -1:
+                char_index1 = self._n_chars - 1
+            # end if
+
             # Add
             char_index2 = char_index2 + 1 if char_index2 != -1 else -1
 
@@ -224,15 +237,17 @@ class BagOfCharactersTensor(object):
         # Normalize
         if normalize:
             if self._n_gram == 2:
-                tensor[0, :, 1:] /= total
-                tensor[0, :, 1:] /= tensor[0, :, 1:].max()
-                tensor[0, :, 1:] *= self._multi
+                tensor[0, :self._n_chars, 1:] /= total
+                tensor[0, :self._n_chars, 1:] /= tensor[0, :, 1:].max()
+                tensor[0, :self._n_chars, 1:] *= self._multi
             elif self._n_gram == 3:
-                tensor[0, :, 1:, 0] /= total
-                tensor[0, :, 1:, 0] /= tensor[0, :, 1:, 0]
-                tensor[0, :, 1:, 0] *= self._multi
+                tensor[0, :self._n_chars, 1:, 0] /= total
+                tensor[0, :self._n_chars, 1:, 0] /= tensor[0, :, 1:, 0]
+                tensor[0, :self._n_chars, 1:, 0] *= self._multi
             # end if
         # end if
+
+        return tensor
     # end _compute_2gram
 
     # Compute 3-gram values
@@ -257,6 +272,11 @@ class BagOfCharactersTensor(object):
             char_index2 = self._get_char_index(gram[1])
             char_index3 = self._get_char_index(gram[2])
 
+            # Not found
+            if char_index1 == -1:
+                char_index1 = self._n_chars - 1
+            # end if
+
             # Add
             char_index2 = char_index2 + 1 if char_index2 != -1 else -1
             char_index3 = char_index3 + 1 if char_index3 != -1 else -1
@@ -269,10 +289,12 @@ class BagOfCharactersTensor(object):
 
         # Normalize
         if normalize:
-            tensor[0, :, 1:, 1:] /= total
-            tensor[0, :, 1:, 1:] /= tensor[0, :, 1:, 1:].max()
-            tensor[0, :, 1:, 1:] *= self._multi
+            tensor[0, :self._n_chars, 1:, 1:] /= total
+            tensor[0, :self._n_chars, 1:, 1:] /= tensor[0, :self._n_chars, 1:, 1:].max()
+            tensor[0, :self._n_chars, 1:, 1:] *= self._multi
         # end if
+
+        return tensor
     # end _compute_3gram
 
     # Compute position grams
@@ -294,7 +316,7 @@ class BagOfCharactersTensor(object):
             raise Exception(u"I need a tokenizer!")
         # end if
 
-        # Gram positin
+        # Gram position
         gram_pos1 = 0
         if gram_type == 'end':
             gram_pos1 = -1
@@ -307,10 +329,15 @@ class BagOfCharactersTensor(object):
                 # Index
                 char_index1 = self._get_char_index(token[gram_pos1])
 
+                # Not found
+                if char_index1 == -1:
+                    char_index1 = self._n_chars - 1
+                # end if
+
                 # Set
                 if self._n_gram == 1:
                     tensor[0, start_pos + char_index1] += 1.0
-                if self._n_gram == 2:
+                elif self._n_gram == 2:
                     tensor[0, start_pos + char_index1, 0] += 1.0
                 else:
                     tensor[0, start_pos + char_index1, 0, 0] += 1.0
@@ -337,6 +364,7 @@ class BagOfCharactersTensor(object):
                 tensor[0, start_pos:start_pos + self._n_chars, 0, 0] *= self._multi
             # end if
         # end if
+        return tensor
     # end _compute_position_1gram
 
     # Compute position grams
@@ -373,6 +401,11 @@ class BagOfCharactersTensor(object):
                 char_index1 = self._get_char_index(token[gram_pos1])
                 char_index2 = self._get_char_index(token[gram_pos2])
 
+                # Not found
+                if char_index1 == -1:
+                    char_index1 = self._n_chars - 1
+                # end if
+
                 # Add
                 char_index2 = char_index2 + 1 if char_index2 != -1 else -1
 
@@ -402,6 +435,8 @@ class BagOfCharactersTensor(object):
                 tensor[0, start_pos:start_pos + self._n_chars, 1:, 0] *= self._multi
             # end if
         # end if
+
+        return tensor
     # end _compute_position_gram
 
     # Get char index
