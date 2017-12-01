@@ -86,7 +86,7 @@ class Clutering(object):
     # end update
 
     # Compute hierarchical clustering
-    def hierarchical_clustering(self, dendogram_file=None):
+    def hierarchical_clustering(self, dendogram_file=None, figsize=(30, 10)):
         """
         Compute hierarchical clustering
         :param dendogram: Output filename for the dendogram
@@ -95,6 +95,9 @@ class Clutering(object):
         # Array of vectors
         X = np.array([])
 
+        # Labels
+        labels = list()
+
         # Add each sample vector
         for index, sample in enumerate(self._samples):
             if index == 0:
@@ -102,6 +105,7 @@ class Clutering(object):
             else:
                 X = np.vstack((X, self._sample_vectors[sample]))
             # end if
+            labels.append(sample.y())
         # end for
 
         # Clustering
@@ -109,7 +113,7 @@ class Clutering(object):
 
         # Dendogram
         if dendogram_file:
-            plt.figure()
+            plt.figure(figsize=figsize)
             plt.title(u"Hierarchical Clustering Dendogram")
             plt.xlabel('sample index')
             plt.ylabel('distance')
@@ -117,6 +121,7 @@ class Clutering(object):
                 Z,
                 leaf_rotation=90.,
                 leaf_font_size=8,
+                labels=labels
             )
             plt.savefig(dendogram_file)
         # end if
