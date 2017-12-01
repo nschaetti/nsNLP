@@ -7,6 +7,8 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import sklearn.cluster
 import networkx as nx
+from matplotlib import pyplot as plt
+from scipy.cluster.hierarchy import dendrogram, linkage
 
 
 # Clustering tool
@@ -82,6 +84,45 @@ class Clutering(object):
         # Distance again
         self._distance_measured = False
     # end update
+
+    # Compute hierarchical clustering
+    def hierarchical_clustering(self, dendogram_file=None):
+        """
+        Compute hierarchical clustering
+        :param dendogram: Output filename for the dendogram
+        :return:
+        """
+        # Array of vectors
+        X = np.array([])
+
+        # Add each sample vector
+        for index, sample in enumerate(self._samples):
+            if index == 0:
+                X = self._sample_vectors[sample]
+            else:
+                X = np.vstack((X, self._sample_vectors[sample]))
+            # end if
+        # end for
+
+        # Clustering
+        Z = linkage(X, 'ward')
+
+        # Dendogram
+        if dendogram_file:
+            plt.figure()
+            plt.title(u"Hierarchical Clustering Dendogram")
+            plt.xlabel('sample index')
+            plt.ylabel('distance')
+            dendrogram(
+                Z,
+                leaf_rotation=90.,
+                leaf_font_size=8,
+            )
+            plt.savefig(dendogram_file)
+        # end if
+
+        return Z
+    # end hierarchical_clustering
 
     # Compute clusters with K-Means
     def k_means(self, k, random_state=0):
