@@ -261,17 +261,18 @@ class NaiveBayesClassifier(TextClassifier):
                 # end if
             # end for
         # end for
+        context = decimal.Context(prec=1000)
 
         # Multiply by class probability
-        sum = decimal.Decimal(0.0)
+        prob_sum = decimal.Decimal(0.0)
         for c in self._classes:
             classes_probabilities[c] *= decimal.Decimal(self._p_c[c])
-            sum += decimal.Decimal(classes_probabilities[c])
+            prob_sum = context.add(prob_sum, classes_probabilities[c])
         # end for
 
         # Normalize
         for c in self._classes:
-            classes_probabilities[c] /= sum
+            classes_probabilities[c] = context.divide(classes_probabilities[c], prob_sum)
         # end for
 
         # Get max
