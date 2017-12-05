@@ -116,6 +116,29 @@ class ESNTextClassifier(TextClassifier):
     # end __init__
 
     ##############################################
+    # Properties
+    ##############################################
+
+    # Get last output
+    @property
+    def outputs(self):
+        """
+        Get last output
+        :return:
+        """
+        return self._last_y
+    # end outputs
+
+    # Get w matrix
+    def w(self):
+        """
+        Get w matrix
+        :return:
+        """
+        return self._reservoir.w
+    # end w
+
+    ##############################################
     # Public
     ##############################################
 
