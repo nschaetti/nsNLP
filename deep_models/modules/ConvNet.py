@@ -79,6 +79,9 @@ class ConvNet(nn.Module):
         x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), self._max_pool2_size))
 
         # Put all 320 features into 1D line << x
+        """print(x.size())
+        print(ConvNet.num_flat_features(x))
+        exit()"""
         x = x.view(-1, ConvNet.num_flat_features(x))
 
         # ReLU << Linear model on 4800 features to 50 outputs << x

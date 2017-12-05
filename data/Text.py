@@ -52,6 +52,16 @@ class Text(Sample):
         return codecs.open(self._text_path, 'r', encoding='utf-8').read()
     # end text
 
+    # Save text
+    def save(self, text):
+        """
+        Save text
+        :param text:
+        :return:
+        """
+        return codecs.open(self._text_path, 'w', encoding='utf-8').write(text)
+    # end save
+
     # Get author
     def get_author(self):
         """
