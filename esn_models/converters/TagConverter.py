@@ -78,6 +78,7 @@ class TagConverter(Converter):
         # Null symbol
         null_symbol = np.zeros((1, len(self.get_tags())))
 
+        started = False
         for index, word in enumerate(tokens):
             if word.tag_ not in exclude and word not in word_exclude:
                 sym = self.tag_to_symbol(word.tag_)
@@ -85,8 +86,9 @@ class TagConverter(Converter):
                     sym = null_symbol
                 # end if
                 if sym is not None:
-                    if index == 0:
+                    if not started:
                         doc_array = sym
+                        started = True
                     else:
                         doc_array = np.vstack((doc_array, sym))
                     # end if
