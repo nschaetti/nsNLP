@@ -76,6 +76,7 @@ class PosConverter(Converter):
         null_symbol = np.zeros((1, len(self.get_tags())))
 
         # For each words
+        started = False
         for index, word in enumerate(tokens):
             if word.pos_ not in exclude and word not in word_exclude:
                 sym = self.tag_to_symbol(word.pos_)
@@ -83,15 +84,15 @@ class PosConverter(Converter):
                     sym = null_symbol
                 # end if
                 if sym is not None:
-                    if index == 0:
+                    if not started:
                         doc_array = sym
+                        started = True
                     else:
                         doc_array = np.vstack((doc_array, sym))
                     # end if
                 # end if
             # end if
         # end for
-
         return self.reduce(doc_array)
     # end convert
 
