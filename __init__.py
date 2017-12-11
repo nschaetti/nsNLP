@@ -16,6 +16,7 @@ import embeddings
 import esn_models
 import esn_models.converters
 import features
+import generator
 import lsa_models
 import lstm_models
 import measures
@@ -27,4 +28,4 @@ import tools
 import validation
 import visualisation
 
-__all__ = ['classifiers', 'clustering', 'data', 'deep_models', 'embeddings', 'esn_models', 'features', 'lsa_models', 'lstm_models', 'measures', 'rnn_models', 'statistical_models', 'tfidf', 'tokenization', 'tools', 'validation', 'visualisation']
+__all__ = ['classifiers', 'clustering', 'data', 'deep_models', 'embeddings', 'esn_models', 'features', 'generator', 'lsa_models', 'lstm_models', 'measures', 'rnn_models', 'statistical_models', 'tfidf', 'tokenization', 'tools', 'validation', 'visualisation']
