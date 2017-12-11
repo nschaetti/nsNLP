@@ -441,7 +441,8 @@ class ESNTextClassifier(TextClassifier):
     @staticmethod
     def create(classes, rc_size, rc_spectral_radius, rc_leak_rate, rc_input_scaling, rc_input_sparsity,
                rc_w_sparsity, converters_desc, w=None, voc_size=10000, uppercase=False,
-               use_sparse_matrix=False, aggregation='average', pca_path="", state_gram=1, parallel=False, alphabet=u""):
+               use_sparse_matrix=False, aggregation='average', pca_path="", state_gram=1, parallel=False, alphabet=u"",
+               fill_in=False):
         """
         Constructor
         :param classes: Possible classes
@@ -461,7 +462,7 @@ class ESNTextClassifier(TextClassifier):
         converter_list = list()
 
         # Joined converters
-        joined_converters = True if len(converters_desc) > 1 else False
+        joined_converters = True if len(converters_desc) > 1 else fill_in
 
         # For each converter
         for converter_desc in converters_desc:
