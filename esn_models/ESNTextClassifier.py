@@ -130,6 +130,7 @@ class ESNTextClassifier(TextClassifier):
     # end outputs
 
     # Get w matrix
+    @property
     def w(self):
         """
         Get w matrix
@@ -137,6 +138,15 @@ class ESNTextClassifier(TextClassifier):
         """
         return self._reservoir.w
     # end w
+
+    # Get converter
+    def converter(self):
+        """
+        Get converter
+        :return:
+        """
+        return self._converter
+    # end converter
 
     ##############################################
     # Public
@@ -259,23 +269,42 @@ class ESNTextClassifier(TextClassifier):
             if verbose:
                 print(u"Training on {}/{}...".format(index, len(self._examples)))
             # end if
+            keep_inputs = x
             x, y = self._generate_training_data(x, author_index)
             if verbose:
                 print(self._converter)
             # end if
 
-            # Add inputs
-            X.append(x)
+            # Length
+            try:
+                length_x = len(x)
+                length_y = len(y)
+            except TypeError:
+                length_x = x.shape[0]
+                length_y = y.shape[0]
+            # end try
 
-            # Add outputs
-            if self._state_gram == -1:
-                Y.append(y[-1])
+            # Check not empty
+            if length_x > 0 and length_y > 0:
+                if length_x == length_y:
+                    # Add inputs
+                    X.append(x)
+
+                    # Add outputs
+                    if self._state_gram == -1:
+                        Y.append(y[-1])
+                    else:
+                        Y.append(y)
+                    # end if
+
+                    # Token per classes
+                    self._author_token_count[author_index] += x.shape[0]
+                else:
+                    print(u"Warning input and output are not the same length ({}/{})!".format(len(x), len(y)))
+                # end if
             else:
-                Y.append(y)
+                print(u"Warning input or output is empty, removed ({}/{})!".format(len(x), len(y)))
             # end if
-
-            # Token per classes
-            self._author_token_count[author_index] += x.shape[0]
         # end for
 
         # Create data
@@ -290,7 +319,14 @@ class ESNTextClassifier(TextClassifier):
             print(u"Training model...")
             print(datetime.now().strftime("%H:%M:%S"))
         # end if
-
+        """print(u"{} nodes * {} samples".format(len(data), len(data[1])))
+        for i in range(len(data[1])):
+            try:
+                print(u"{} * ({}/{})".format(len(data[1][i]), len(data[1][i][0]), len(data[1][i][1])))
+            except TypeError:
+                print(u"{} * ({}/{})".format(len(data[1][i]), data[1][i][0].shape, data[1][i][1].shape))
+            # end try
+        # end for"""
         # Train the model
         self._flow.train(data)
 
