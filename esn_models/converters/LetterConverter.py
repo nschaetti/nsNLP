@@ -114,7 +114,7 @@ class LetterConverter(Converter):
         Get inputs size.
         :return: The input size.
         """
-        return len(self.get_tags())
+        return self._n_chars
     # end if
 
 # end LetterConverter
