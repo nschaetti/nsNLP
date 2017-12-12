@@ -44,10 +44,13 @@ class LetterConverter(Converter):
         :param tag_to_symbol: Tag to symbol conversion array.
         :param resize: Reduce dimensionality.
         """
-        super(LetterConverter, self).__init__(tag_to_symbol, resize, pca_model)
+        # Properties
         self._alphabet = alphabet
         self._fill_in = fill_in
         self._n_chars = len(alphabet) + 1
+
+        # Super
+        super(LetterConverter, self).__init__(tag_to_symbol, resize, pca_model)
 
         # Letter to index
         self._char2index = dict()
