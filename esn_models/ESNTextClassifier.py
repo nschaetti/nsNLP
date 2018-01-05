@@ -140,6 +140,7 @@ class ESNTextClassifier(TextClassifier):
     # end w
 
     # Get converter
+    @property
     def converter(self):
         """
         Get converter
@@ -271,6 +272,7 @@ class ESNTextClassifier(TextClassifier):
             # end if
             keep_inputs = x
             x, y = self._generate_training_data(x, author_index)
+
             if verbose:
                 print(self._converter)
             # end if
