@@ -74,6 +74,7 @@ class PosConverter(Converter):
 
         # Null symbol
         null_symbol = np.zeros((1, len(self.get_tags())))
+        null_symbol[-1] = 1.0
 
         # For each words
         started = False

@@ -85,7 +85,7 @@ class FuncWordConverter(Converter):
                 u"us", u"used", u"usedn't", u"usen't", u"usually", u"'ve", u"very", u"was", u"wasn't",
                 u"we", u"well", u"were", u"weren't", u"what", u"when", u"where", u"whether", u"which",
                 u"while", u"who", u"whom", u"whose", u"why", u"will", u"with", u"without", u"won't",
-                u"would", u"wouldn't", u"yet", u"you", u"your", u"yours", u"yourself", u"yourselves"]
+                u"would", u"wouldn't", u"yet", u"you", u"your", u"yours", u"yourself", u"yourselves", u"X"]
     # end get_tags
 
     ##############################################
@@ -104,6 +104,7 @@ class FuncWordConverter(Converter):
 
         # Null symbol
         null_symbol = np.zeros((1, len(self.get_tags())))
+        null_symbol[-1] = 1.0
 
         # For each words
         init = False
