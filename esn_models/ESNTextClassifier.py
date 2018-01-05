@@ -321,14 +321,7 @@ class ESNTextClassifier(TextClassifier):
             print(u"Training model...")
             print(datetime.now().strftime("%H:%M:%S"))
         # end if
-        """print(u"{} nodes * {} samples".format(len(data), len(data[1])))
-        for i in range(len(data[1])):
-            try:
-                print(u"{} * ({}/{})".format(len(data[1][i]), len(data[1][i][0]), len(data[1][i][1])))
-            except TypeError:
-                print(u"{} * ({}/{})".format(len(data[1][i]), data[1][i][0].shape, data[1][i][1].shape))
-            # end try
-        # end for"""
+
         # Train the model
         self._flow.train(data)
 
