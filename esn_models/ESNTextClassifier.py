@@ -455,7 +455,7 @@ class ESNTextClassifier(TextClassifier):
 
     # Generate W matrix
     @staticmethod
-    def w(rc_size, rc_w_sparsity):
+    def generate_w(rc_size, rc_w_sparsity):
         """
         Generate W matrix
         :param rc_size:
