@@ -23,6 +23,7 @@
 #
 
 # Import packages
+from ESNTextAnalyser import ESNTextAnalyser
 from ESNTextClassifier import ESNTextClassifier
 from Word2Echo import Word2Echo
 from converters.FuncWordConverter import FuncWordConverter

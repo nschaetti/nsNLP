@@ -109,6 +109,23 @@ class ESNTextAnalyser(ESNTextClassifier):
     # Private
     ##############################################
 
+    # Create outputs
+    def _create_outputs(self, tags_list):
+        """
+        Create outputs
+        :param tags_list:
+        :return:
+        """
+        y = list()
+        for tag in tags_list:
+            tag_int = self._class_to_int(tag)
+            output_vector = np.zeros(self._n_classes)
+            output_vector[tag_int] = 1.0
+            y.append(output_vector)
+        # end for
+        return y
+    # end _create_outputs
+
     # Finalize the training phase
     def _finalize_training(self, verbose=False):
         """
@@ -120,11 +137,14 @@ class ESNTextAnalyser(ESNTextClassifier):
         Y = list()
 
         # For each training text file
-        for index, (x, y) in enumerate(self._examples):
+        for index, (x, tags) in enumerate(self._examples):
             if verbose:
                 print(u"Training on {}/{}...".format(index, len(self._examples)))
             # end if
             x, _ = self._generate_training_data(x, 0)
+
+            # Outputs
+            y = self._create_outputs(tags)
 
             if verbose:
                 print(self._converter)
