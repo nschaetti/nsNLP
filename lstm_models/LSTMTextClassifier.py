@@ -23,23 +23,130 @@
 #
 
 # Import packages
-import numpy as np
-import mdp
-from datetime import datetime
 from sys import getsizeof
 from nsNLP.classifiers.TextClassifier import TextClassifier
-import matplotlib.pyplot as plt
-from decimal import *
-import logging
-import torch
-import torch.autograd as autograd
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from .modules.LSTMModule import LSTMModule
 
 
 # LSTM classifier model
 class LSTMTextClassifier(TextClassifier):
-    pass
+    """
+    LSTM classifier model
+    """
+
+    # Constructor
+    def __init__(self, classes, hidden_size, converter, embedding_dim=300, learning_rate=0.1):
+        """
+        Constructor
+        :param classes:
+        :param hidden_size:
+        :param converter:
+        :param embedding_dim:
+        :param learning_rate:
+        """
+        # Super
+        super(LSTMTextClassifier, self).__init__(classes=classes)
+
+        # Properties
+        self._embedding_dim = embedding_dim
+        self._hidden_size = hidden_size
+
+        # Create model
+        if converter is not None:
+            self._model = LSTMModule(embedding_dim, hidden_size, self._n_classes)
+        else:
+            self._model = LSTMModuleEmbeddings()
+        # end if
+        self._loss_function = nn.NLLLoss()
+        self._optimizer = optim.SGD(self._model.parameters(), lr=learning_rate)
+    # end __init__
+
+    ##############################################
+    # Override
+    ##############################################
+
+    # To string
+    def __str__(self):
+        """
+        To string
+        :return:
+        """
+        return "LSTMTextClassifier(n_classes={}, embedding_size={}, hidden_size={}, mem_size={}o)".format(
+            self._n_classes, self._embedding_dim, self._hidden_size, getsizeof(self))
+    # end __str__
+
+    # To unicode
+    def __unicode__(self):
+        """
+        To string
+        :return:
+        """
+        return u"LSTMTextClassifier(n_classes={}, embedding_size={}, hidden_size={}, mem_size={}o)".format(
+            self._n_classes, self._embedding_dim, self._hidden_size, getsizeof(self))
+    # end __unicode__
+
+    ##############################################
+    # Private
+    ##############################################
+
+    # Train
+    def _train(self, x, y, verbose=False):
+        """
+        Add a training example
+        :param x: Text file example
+        :param y: Corresponding author
+        """
+        self._examples.append((x, y))
+    # end _train
+
+    # Finalize the training phase
+    def _finalize_training(self, verbose=False):
+        """
+        Finalize the training phase
+        :param verbose: Verbosity
+        """
+        pass
+    # end _finalize_training
+
+    # Classify a text file
+    def _classify(self, text):
+        """
+        Classify text
+        :param text: Text to classify
+        :return: Predicted class and class probabilities
+        """
+        pass
+    # end _classify
+
+    # Reset learning but keep reservoir
+    def _reset_model(self):
+        """
+        Reset model learned parameters
+        """
+        pass
+    # end _reset_model
+
+    # Generate training data from text
+    def _generate_training_data(self, text, author):
+        """
+        Generate training data from text file.
+        :param text: Text
+        :param author: Corresponding author.
+        :return: Data set inputs
+        """
+        pass
+    # end generate_training_data
+
+    # Generate text data from text file
+    def _generate_test_data(self, text):
+        """
+        Generate text data from text file
+        :param text: Text
+        :return: Test data set inputs
+        """
+        pass
+    # end generate_text_data
+
 # end LSTMTextClassifier
