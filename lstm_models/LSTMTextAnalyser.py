@@ -91,6 +91,43 @@ class LSTMTextAnalyser(LSTMTextClassifier):
     # Private
     ##############################################
 
+    # Finalize the training phase
+    def _finalize_training(self, verbose=False):
+        """
+        Finalize the training phase
+        :param verbose: Verbosity
+        """
+        # For each epoch
+        for epoch in range(self._n_epoch):
+            # For each training text file
+            for index, (x, y) in enumerate(self._examples):
+                # As pyTorch accumulates gradients we clear them
+                # out before each instance.
+                self._model.zero_grad()
+
+                # Re-init the hidden state
+                self._model.hidden = self._model.init_hidden()
+
+                # Now we prepare the inputs and turn them into
+                # variables.
+                class_index = self._class_to_int(y)
+                train_x, _ = self._generate_training_data(x, class_index)
+
+                # For each target time t
+                train_y = [self._int_to_class(tt) for tt in y]
+                train_y = torch.LongTensor(train_y)
+
+                # Run the forward pass
+                tag_scores = self._model(x)
+
+                # Compute loss, gradients and update parameters
+                loss = self._loss_function(tag_scores, train_y)
+                loss.backward()
+                self._optimizer.step()
+            # end for
+        # end for
+    # end _finalize_training
+
     # Classify a text file
     def _classify(self, text):
         """
