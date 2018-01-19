@@ -36,8 +36,8 @@ class GRUTextAnalyser(GRUTextClassifier):
     """
 
     # Constructor
-    def __init__(self, classes, hidden_size, converter, embedding_dim=300, learning_rate=0.1, voc_size=0, n_epoch=300,
-                 aggregation='average', smoothing=0.001):
+    def __init__(self, classes, hidden_size, converter, n_layers=1, embedding_dim=300, learning_rate=0.1, voc_size=0,
+                 n_epoch=300, aggregation='average', smoothing=0.001, word2index=None, tokenizer=None):
         """
         Constructor
         :param classes:
@@ -50,8 +50,8 @@ class GRUTextAnalyser(GRUTextClassifier):
         :param aggregation:
         :param smoothing:
         """
-        super(GRUTextAnalyser, self).__init__(classes, hidden_size, converter, embedding_dim, learning_rate, voc_size,
-                                               n_epoch, aggregation, smoothing)
+        super(GRUTextAnalyser, self).__init__(classes, hidden_size, converter, n_layers, embedding_dim, learning_rate, voc_size,
+                                               n_epoch, aggregation, smoothing, word2index, tokenizer)
     # end __init__
 
     ##############################################
