@@ -200,6 +200,9 @@ class LSTMTextClassifier(TextClassifier):
             last_outputs = y[-1]
             _, best_class = torch.max(last_outputs, 0)
             return self._int_to_class(best_class), last_outputs
+        else:
+            print(u"Unknown aggregation function {}!".format(self._aggregation))
+            exit()
         # end if
     # end _classify
 
