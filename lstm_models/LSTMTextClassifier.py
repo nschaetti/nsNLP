@@ -46,7 +46,8 @@ class LSTMTextClassifier(TextClassifier):
     _last_y = None
 
     # Constructor
-    def __init__(self, classes, hidden_size, converter, embedding_dim=300, learning_rate=0.1, voc_size=0, n_epoch=300, aggregation='average', smoothing=0.001):
+    def __init__(self, classes, hidden_size, converter, embedding_dim=300, learning_rate=0.1, voc_size=0, n_epoch=300,
+                 aggregation='average', smoothing=0.001):
         """
         Constructor
         :param classes:
