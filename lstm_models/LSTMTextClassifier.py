@@ -47,7 +47,7 @@ class LSTMTextClassifier(TextClassifier):
 
     # Constructor
     def __init__(self, classes, hidden_size, converter, embedding_dim=300, learning_rate=0.1, voc_size=0, n_epoch=300,
-                 aggregation='average', smoothing=0.001):
+                 aggregation='average', smoothing=0.001, word2index=None, tokenizer=None):
         """
         Constructor
         :param classes:
@@ -68,6 +68,8 @@ class LSTMTextClassifier(TextClassifier):
         self._learning_rate = learning_rate
         self._aggregation = aggregation
         self._smoothing = smoothing
+        self._word2index = word2index
+        self._tokenizer = tokenizer
 
         # Create model
         self._reset_model()
@@ -232,26 +234,46 @@ class LSTMTextClassifier(TextClassifier):
         :param c: Corresponding class.
         :return: Data set inputs
         """
-        # Get Temporal Representations
-        reps = self._converter(text)
+        if self._converter is not None:
+            # Get Temporal Representations
+            reps = self._converter(text)
 
-        # Converter type
-        converter_type = type(self._converter)
+            # Converter type
+            converter_type = type(self._converter)
 
-        # Generate x and y
-        x, _ = converter_type.generate_data_set_inputs(reps, self._n_classes, c)
+            # Generate x and y
+            x, _ = converter_type.generate_data_set_inputs(reps, self._n_classes, c)
 
-        # Training length
-        train_length = x.shape[0]
+            # Training length
+            train_length = x.shape[0]
 
-        # Targets as tensor
-        y = torch.FloatTensor(train_length, self._n_classes).zero_()
-        y[:, c] = 1
+            # Targets as tensor
+            y = torch.FloatTensor(train_length, self._n_classes).zero_()
+            y[:, c] = 1
 
-        # Inputs as Tensor
-        x = torch.FloatTensor(x)
+            # Inputs as Tensor
+            x = torch.FloatTensor(x)
 
-        return autograd.Variable(x), autograd.Variable(y)
+            return autograd.Variable(x), autograd.Variable(y)
+        else:
+            # Text to token
+            tokens = self._tokenizer(text)
+
+            # Tokens to index
+            idxs = [self._word2index[tokens] in tokens]
+
+            # Training length
+            train_length = idxs.shape[0]
+
+            # Targets
+            y = torch.FloatTensor(train_length, self._n_classes).zero_()
+            y[:, c] = 1
+
+            # Inputs as tensor
+            x = torch.LongTensor(idxs)
+
+            return autograd.Variable(x), autograd.Variable(y)
+        # end if
     # end generate_training_data
 
     # Generate text data from text file
