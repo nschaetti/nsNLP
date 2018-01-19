@@ -359,7 +359,7 @@ class ESNTextClassifier(TextClassifier):
         # Get maximum probability class
         if self._aggregation == 'average':
             return self._int_to_class(np.argmax(np.average(y, 0))), np.average(y, 0)
-        else:
+        elif self._aggregation == 'multiply':
             # Decimal score
             scores = list()
             for i in range(self._n_classes):
@@ -387,6 +387,11 @@ class ESNTextClassifier(TextClassifier):
                 # end if
             # end for
             return max_c, scores
+        elif self._aggregation == 'last':
+            return self._int_to_class(y[-1]), y[-1]
+        else:
+            print(u"Unknown aggregation function {}".format(self._aggregation))
+            exit()
         # end if
     # end _classify
 
