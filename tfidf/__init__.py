@@ -23,5 +23,5 @@
 #
 
 # Import packages
-from TFIDF2GramTextClassifier import TFIDF2GramTextClassifier
-from TFIDFTextClassifier import TFIDFTextClassifier
+from .TFIDF2GramTextClassifier import TFIDF2GramTextClassifier
+from .TFIDFTextClassifier import TFIDFTextClassifier

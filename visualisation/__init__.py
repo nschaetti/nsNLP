@@ -1,3 +1,3 @@
 
 # Import
-from EmbeddingsVisualisation import EmbeddingsVisualisation
+from .EmbeddingsVisualisation import EmbeddingsVisualisation

@@ -9,7 +9,7 @@
 # Imports
 import json
 import os
-from Author import Author
+from .Author import Author
 
 
 # Class to access to the corpus

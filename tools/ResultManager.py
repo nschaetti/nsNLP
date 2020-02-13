@@ -32,7 +32,7 @@ from sklearn.utils.extmath import cartesian
 import csv
 import scipy
 import sys
-import LatexPlots
+from .LatexPlots import *
 
 
 # Manage and save results
@@ -538,7 +538,7 @@ class ResultManager(object):
         # Sample per values
         for index, value in enumerate(values):
             # Value type
-            if type(value) == str or type(value) == unicode or type(value) is list:
+            if type(value) == str or type(value) == str or type(value) is list:
                 value_type = 'str'
             # end if
 
@@ -574,8 +574,8 @@ class ResultManager(object):
             samples_results = np.nanmean(samples, axis=-1).flatten()
 
             # Save histogram for this value
-            self._save_histogram(os.path.join(param_path, u"hist_" + unicode(the_value) + u".png"), samples_results,
-                                 u"Histogram " + unicode(the_value), u"Result", u"%")
+            self._save_histogram(os.path.join(param_path, u"hist_" + str(the_value) + u".png"), samples_results,
+                                 u"Histogram " + str(the_value), u"Result", u"%")
 
             # Add to dict
             value_samples[the_value] = np.ascontiguousarray(samples)
@@ -606,7 +606,7 @@ class ResultManager(object):
                 for sub_param in self._params_dict.keys():
                     if param != sub_param and len(self._params_dict[sub_param]) > 1:
                         # Path
-                        sub_param_path = os.path.join(param_path, unicode(the_value))
+                        sub_param_path = os.path.join(param_path, str(the_value))
 
                         # Create directory
                         if not os.path.exists(sub_param_path):
@@ -767,7 +767,7 @@ class ResultManager(object):
         ylabel = ylabel.replace(u"_", u"-")
 
         # Latex template
-        latex_template = LatexPlots.latex_start + LatexPlots.latex_plot + LatexPlots.latex_end
+        latex_template = latex_start + latex_plot + latex_end
 
         # Latex data
         latex_data = u""

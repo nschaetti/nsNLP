@@ -7,7 +7,7 @@
 # Copyright Nils Schaetti, University of Neuchâtel <nils.schaetti@unine.ch>
 
 # Imports
-from Sample import Sample
+from .Sample import Sample
 import codecs
 
 

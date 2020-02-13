@@ -24,7 +24,7 @@
 
 # Import packages
 from nsNLP.classifiers.TextClassifier import TextClassifier
-from GRUTextClassifier import GRUTextClassifier
+from .GRUTextClassifier import GRUTextClassifier
 from sys import getsizeof
 import torch
 

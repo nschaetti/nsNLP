@@ -9,7 +9,7 @@
 # Imports
 import json
 import os
-from Text import Text
+from .Text import Text
 
 
 # Class to access to an author

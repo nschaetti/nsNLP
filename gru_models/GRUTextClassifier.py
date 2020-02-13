@@ -24,7 +24,7 @@
 
 # Import packages
 import numpy as np
-import mdp
+# import mdp
 from datetime import datetime
 from sys import getsizeof
 from nsNLP.classifiers.TextClassifier import TextClassifier

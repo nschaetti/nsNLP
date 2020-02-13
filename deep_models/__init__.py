@@ -20,5 +20,5 @@
 # Copyright Nils Schaetti, University of Neuchâtel <nils.schaetti@unine.ch>
 
 # Imports
-from modules.ConvNet import ConvNet
-from CNNModel import CNNModel
+from .modules.ConvNet import ConvNet
+from .CNNModel import CNNModel

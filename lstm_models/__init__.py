@@ -23,5 +23,5 @@
 #
 
 # Import packages
-from LSTMTextAnalyser import LSTMTextAnalyser
-from LSTMTextClassifier import LSTMTextClassifier
+from .LSTMTextAnalyser import LSTMTextAnalyser
+from .LSTMTextClassifier import LSTMTextClassifier

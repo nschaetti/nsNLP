@@ -7,25 +7,29 @@
 # Copyright Nils Schaetti, University of Neuchâtel <nils.schaetti@unine.ch>
 
 # Imports
-import classifiers
-import clustering
-import data
-import deep_models
-import deep_models.modules
-import embeddings
-import esn_models
-import esn_models.converters
-import features
-import generator
-import lsa_models
-import lstm_models
-import measures
-import rnn_models
-import statistical_models
-import tfidf
-import tokenization
-import tools
-import validation
-import visualisation
+from . import classifiers
+from . import clustering
+from . import data
+from . import deep_models
+# from . import deep_models.modules
+from . import embeddings
+# from . import esn_models
+# from . import esn_models.converters
+from . import features
+from . import generator
+from . import lsa_models
+from . import lstm_models
+from . import measures
+from . import rnn_models
+from . import statistical_models
+from . import tfidf
+from . import tokenization
+from . import tools
+from . import validation
+from . import visualisation
 
-__all__ = ['classifiers', 'clustering', 'data', 'deep_models', 'embeddings', 'esn_models', 'features', 'generator', 'lsa_models', 'lstm_models', 'measures', 'rnn_models', 'statistical_models', 'tfidf', 'tokenization', 'tools', 'validation', 'visualisation']
+__all__ = [
+    'classifiers', 'clustering', 'data', 'deep_models', 'embeddings', 'esn_models', 'features', 'generator',
+    'lsa_models', 'lstm_models', 'measures', 'rnn_models', 'statistical_models', 'tfidf', 'tokenization',
+    'tools', 'validation', 'visualisation'
+]

@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import scipy.stats
 import numpy as np
-import dataset.questions_words
+from .dataset import questions_words
 import unicodecsv as csv
 import math
 from multiprocessing import Queue, Process, Lock
@@ -90,7 +90,7 @@ class QuestionsWords(object):
             csv_writer = csv.writer(f, )
 
             # Write header
-            head_row = [u"word1", u"word2", u"word3", u"result", u"position", u"measure"] + [unicode(i+1) for i in range(100)]
+            head_row = [u"word1", u"word2", u"word3", u"result", u"position", u"measure"] + [str(i+1) for i in range(100)]
 
             # Queue
             q = Queue()
@@ -283,7 +283,7 @@ class QuestionsWords(object):
         :return:
         """
         # Questions string
-        questions_string = dataset.questions_words.questions_words
+        questions_string = questions_words.questions_words
 
         # Split by line
         question_lines = questions_string.split(u'\n')

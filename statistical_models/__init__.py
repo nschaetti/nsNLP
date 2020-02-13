@@ -23,6 +23,6 @@
 #
 
 # Import packages
-from SLTextClassifier import SLTextClassifier
-from NaiveBayesClassifier import NaiveBayesClassifier
-from TFIDFTextClassifier import TFIDFTextClassifier
+from .SLTextClassifier import SLTextClassifier
+from .NaiveBayesClassifier import NaiveBayesClassifier
+from .TFIDFTextClassifier import TFIDFTextClassifier

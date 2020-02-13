@@ -24,7 +24,7 @@
 
 # Import packages
 from nsNLP.classifiers.TextClassifier import TextClassifier
-from LSTMTextClassifier import LSTMTextClassifier
+from .LSTMTextClassifier import LSTMTextClassifier
 from sys import getsizeof
 import torch
 
