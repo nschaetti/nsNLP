@@ -874,7 +874,8 @@ class ResultManager(object):
         :return:
         """
         # Writer
-        c = csv.writer(open(filename, 'wb'))
+        # c = csv.writer(open(filename, 'wb'))
+        c = csv.writer(open(filename, 'w'))
 
         # Row list
         row_list = list()
@@ -895,6 +896,7 @@ class ResultManager(object):
         row_list.append(u"result")
 
         # Write header
+        print(row_list)
         c.writerow(row_list)
 
         return c

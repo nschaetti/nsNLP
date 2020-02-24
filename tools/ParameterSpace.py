@@ -127,6 +127,14 @@ class ParameterSpace(object):
         return self
     # end __iter__
 
+    # Next element (python3)
+    def __next__(self):
+        """
+        Next element
+        """
+        return self.next()
+    # end __next__
+
     # Next element
     def next(self):
         """
