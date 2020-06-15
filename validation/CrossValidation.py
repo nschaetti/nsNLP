@@ -70,7 +70,7 @@ class CrossValidation(object):
     # end __iter__
 
     # Next
-    def next(self):
+    def __next__(self):
         """
         Next element
         :return:

@@ -64,6 +64,15 @@ class CNNModel(TextClassifier):
     # Public
     ##############################################
 
+    # Get the model
+    def get_model(self):
+        """
+        Get the mode
+        :return:
+        """
+        return self._model
+    # end get_model
+
     # Get name
     def name(self):
         """

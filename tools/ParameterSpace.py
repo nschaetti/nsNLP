@@ -82,7 +82,7 @@ class ParameterSpace(object):
     # Generate all parameters
     def _generate_parameters_space(self):
         """
-        Generate paramters space
+        Generate parameters space
         :return:
         """
         params_space = list()

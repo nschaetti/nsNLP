@@ -121,7 +121,7 @@ class Author(object):
         # For each texts
         for index, author_text in enumerate(author_texts):
             self._texts.append(Text(text_path=os.path.join(self._dataset_path, author_text + u".txt"), author=self,
-                                    text_title=self._name + u" " + unicode(index)))
+                                    text_title=self._name + u" " + str(index)))
         # end for
     # end _load
 
